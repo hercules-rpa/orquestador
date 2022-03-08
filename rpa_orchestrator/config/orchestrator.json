@@ -1,7 +1,7 @@
 {
     "AMQP-SETTING":{
         "user": "admin",
-        "password": "rpa123",
+        "password": "epic123",
         "host": "10.208.99.12",
         "port": "5672",
         "subscriptions": ["rpa.orchestrator","rpa.orchestrator.*"],

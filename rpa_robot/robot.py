@@ -2,7 +2,7 @@
 
 class Robot():
 
-    def __init__(self, id, name, address, registrations, online, connected, features, state, process_running, process_list):
+    def __init__(self, id, name, address, registrations, online=False, connected=False, features='', state="Iddle", process_running=None, process_list=[]):
         self.id = str(id)
         self.name = str(name)
         self.address = str(address)

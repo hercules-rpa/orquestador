@@ -1,0 +1,16 @@
+{
+    "POSTGRES-SETTING":{
+        "host":"10.208.99.12",
+        "port":"5672",
+        "db":"rpa",
+        "user":"postgres",
+        "password":"docker"
+    },
+    "CASSANDRA-SETTING":{
+        "host":"10.208.99.12",
+        "port":"5672",
+        "db":"rpa_bi",
+        "user":"cassandra",
+        "password":"cassandra"
+    }
+}

@@ -1,0 +1,62 @@
+[
+   {
+      "type":"text",
+      "name":"user",
+      "label":"User",
+      "validation":"required|email"
+   },
+   {
+      "type":"password",
+      "name":"password",
+      "label":"Password",
+      "validation":"required"
+   },
+   {
+      "type":"text",
+      "name":"smtp_server",
+      "label":"Smtp Server",
+      "validation":"required"
+   },
+   {
+      "type":"group",
+      "name":"receivers",
+      "validation":"min:1,length",
+      "repeatable":true,
+      "add-label":"+ Add receiver",
+      "value":[
+         {
+            
+         }
+      ],
+      "children":[
+         {
+            "type":"text",
+            "name":"receiver",
+            "label":"Receiver",
+            "validation":"email"
+         },
+         {
+            "type":"text",
+            "name":"subject",
+            "label":"Subject",
+            "validation":"required"
+         },
+         {
+            "type":"textarea",
+            "name":"body",
+            "label":"Body",
+            "validation":"required"
+         },
+         {
+            "type":"file",
+            "name":"attached",
+            "label":"Attach a file",
+            "value":null
+         }
+      ]
+   },
+   {
+      "type":"submit",
+      "label":"Ejecutar"
+   }
+]

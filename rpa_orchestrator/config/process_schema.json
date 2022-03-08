@@ -1,0 +1,48 @@
+{
+    "process": [{
+        "model":{
+            "process_id":   1,
+            "process_class_name": "ProcessHolaMundo",
+            "process_name": "Hola Mundo",
+            "process_description": "Proceso que envía una serie de mensajes a la salida estándar para utilizarlos como prueba",
+            "capable_robots": [],
+            "schema":{
+                "field":[{
+                    "type": "input",
+                    "inputType":"text",
+                    "label":"ID",
+                    "model":"process_id",
+                    "readonly":true,
+                    "featured":false,
+                    "disabled":true
+                   },{
+                    "type": "input",
+                    "inputType":"text",
+                    "label":"Process name",
+                    "model":"process_name",
+                    "readonly":true,
+                    "featured":false,
+                    "disabled":true
+                   },{
+                    "type": "textArea",
+                    "label":"Description",
+                    "model":"process_description",
+                    "max":500,
+                    "row":4,
+                    "readonly":true,
+                    "featured":false,
+                    "disabled":true
+                   },{
+                    "type": "select",
+                    "label":"Select Robot",
+                    "model":"capable_robots",
+                    "required": true,
+                    "readonly":true
+                   }
+                ]
+            }
+        }
+    }
+    
+    ]
+}

@@ -1,0 +1,38 @@
+[
+   {
+      "type":"textarea",
+      "name":"topic_sentence",
+      "label":"Search",
+      "validation":"required"
+   },
+   {
+      "type":"group",
+      "name":"receivers",
+      "validation":"min:1,length",
+      "repeatable":true,
+      "add-label":"+ Add receiver",
+      "value":[
+         {
+            
+         }
+      ],
+      "children":[
+         {
+            "type":"text",
+            "name":"receiver",
+            "label":"Receiver",
+            "validation":"email"
+         }
+      ]
+   },
+   {
+      "type":"number",
+      "name":"topk",
+      "label":"topk",
+      "value":null
+   },
+   {
+      "type":"submit",
+      "label":"Ejecutar"
+   }
+]

@@ -1,8 +1,8 @@
-from uuid import getnode as get_mac
+
 
 class Robot():
 
-    def __init__(self, id, name, address, registrations, online=False, connected=datetime.now().timestamp(), features=[pkg.key for pkg in pkg_resources.working_set], state="Iddle", process_running=None, process_list=[]):
+    def __init__(self, id, name, address, registrations, online, connected, features, state, process_running, process_list):
         self.id = str(id)
         self.name = str(name)
         self.address = str(address)

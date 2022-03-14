@@ -130,6 +130,7 @@ class ControllerAMQP(metaclass=Singleton):
                     await self.queue.bind(self.exchange_consume, routing_key=i)
 
     async def on_message(self, message: IncomingMessage):
+        print(message.body)
         with message.process():
             await self.listener.notify_msg(message.body)
             #print("[x] %r" % message.body)

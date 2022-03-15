@@ -48,7 +48,7 @@ MarkupSafe==1.1.1
 marshmallow==3.11.1
 marshmallow-sqlalchemy==0.25.0
 mkl-fft==1.3.0
-mkl-random @ file:///tmp/build/80754af9/mkl_random_1618853849286/work
+mkl-random==1.2.1
 mkl-service==2.3.0
 mss==6.1.0
 multidict==5.1.0
@@ -56,7 +56,8 @@ netifaces==0.10.9
 netsuitesdk==1.24.0
 notifiers==1.2.1
 ntlm-auth==1.5.0
-numpy @ file:///tmp/build/80754af9/numpy_and_numpy_base_1618497241363/work
+numpy==1.20.1
+numpy-base==1.20.1
 oauthlib==3.1.1
 openpyxl==3.0.9
 orderedmultidict==1.0.1
@@ -82,10 +83,10 @@ PyQtWebEngine==5.15.5
 PyQtWebEngine-Qt5==5.15.2
 pyrsistent==0.18.0
 PySocks==1.7.1
-python-dateutil @ file:///home/ktietz/src/ci/python-dateutil_1611928101742/work
+python-dateutil==2.8.1
 python-editor==1.0.4
 python-xlib==0.31
-pytz @ file:///tmp/build/80754af9/pytz_1612215392582/work
+pytz==2021.1
 pywebview==3.5
 PyYAML==5.4.1
 requests==2.25.1
@@ -106,7 +107,7 @@ rpaframework-dialogs==0.4.2
 rpaframework-pdf==0.9.0
 selenium==3.141.0
 simple-salesforce==1.11.4
-six @ file:///tmp/build/80754af9/six_1605205327372/work
+six==1.15.0
 sortedcontainers==2.4.0
 soupsieve==2.2.1
 sqlacodegen==2.3.0

@@ -3,19 +3,23 @@
       "type":"text",
       "name":"user",
       "label":"User",
-      "validation":"required|email"
+      "validation":"email"
    },
    {
       "type":"password",
       "name":"password",
-      "label":"Password",
-      "validation":"required"
+      "label":"Password"
    },
    {
       "type":"text",
       "name":"smtp_server",
       "label":"Smtp Server",
       "validation":"required"
+   },
+   {
+      "type":"number",
+      "name":"port",
+      "label":"Port"
    },
    {
       "type":"group",
@@ -29,6 +33,12 @@
          }
       ],
       "children":[
+         {
+            "type":"text",
+            "name":"sender",
+            "label":"Sender",
+            "validation":"email"
+         },
          {
             "type":"text",
             "name":"receiver",

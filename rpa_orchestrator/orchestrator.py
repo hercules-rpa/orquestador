@@ -4,25 +4,26 @@ from logging import Handler
 import rpa_orchestrator.lib.Schedule as schedule
 from model.File import File
 import rpa_orchestrator.lib.persistence.dbcon as db
-import rpa_orchestrator.lib.bi.dbcon          as dbbi
-import model.messages                       as messages
+import rpa_orchestrator.lib.bi.dbcon as dbbi
+import model.messages as messages
 import collections
-from model.Event                        import Event, MSG_TYPE
+from model.Event import Event, MSG_TYPE
 from rpa_orchestrator.lib.ScheduleProcess import ScheduleProcess
-from controller.ControllerAMQP          import ControllerAMQP
-from model.interfaces.ListenerMsg       import ListenerMsg
-from datetime                           import datetime
-from model.Log                          import Log
-from customjson.JSONDecoder             import JSONDecoder
-from customjson.JSONEncoder             import JSONEncoder
-from threading                          import Lock
-from random                             import random, seed, randint, choice
+from controller.ControllerAMQP import ControllerAMQP
+from model.interfaces.ListenerMsg import ListenerMsg
+from datetime import datetime
+from model.Log import Log
+from customjson.JSONDecoder import JSONDecoder
+from customjson.JSONEncoder import JSONEncoder
+from threading import Lock
+from random import random, seed, randint, choice
 
 
 TIME_KEEP_ALIVE = 120
 TIME_REMOVE_ROBOT = 280
 
-DIRECTORY_PROCESS_FORM  = "model/process/forms/"
+DIRECTORY_PROCESS_FORM = "model/process/forms/"
+
 
 class Singleton(type):
     _instances = {}
@@ -33,22 +34,22 @@ class Singleton(type):
                 Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-class Orchestrator(ListenerMsg,metaclass=Singleton):
-    def __init__(self, id, name, company, pathlog_store):
-        self.controller     = ControllerAMQP()
-        self.robot_list     = {}
-        self.schedule_list  = [] #lista de ejecuciones planificadas.
-        self.log_list       = collections.deque(maxlen=1000)
-        self.event_list     = collections.deque(maxlen=1000)
-        self.id             = id
-        self.name           = name
-        self.company        = company
-        self.pathlog_store  = pathlog_store
-        self.lock           = Lock() #Comprobar si es necesario
-        self.process        = {} #TODO
-        self.db             = db.ControllerDBPersistence()
-        self.dbbi           = dbbi.ControllerDBBI()
 
+class Orchestrator(ListenerMsg, metaclass=Singleton):
+    def __init__(self, id, name, company, pathlog_store):
+        self.controller = ControllerAMQP()
+        self.robot_list = {}
+        self.schedule_list = []  # lista de ejecuciones planificadas.
+        self.log_list = collections.deque(maxlen=1000)
+        self.event_list = collections.deque(maxlen=1000)
+        self.id = id
+        self.name = name
+        self.company = company
+        self.pathlog_store = pathlog_store
+        self.lock = Lock()  # Comprobar si es necesario
+        self.process = {}  # TODO
+        self.db = db.ControllerDBPersistence()
+        self.dbbi = dbbi.ControllerDBBI()
 
     def reload_robot(self):
         robots = self.db.read_robots_feed()
@@ -57,12 +58,18 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
             self.robot_list[robot[0].id] = (robot[0], robot[1])
 
     def reload_schedule(self):
-        schedules = self.db.read_schedules_feed()
-        self.schedule_list  = []
-        for s in schedules:
-            self.schedule_list.append(s)
-            s.time_to_schedule()
-            self.db.dump([s])
+        self.lock.acquire()
+        try:
+            schedules = self.db.read_schedules_feed()
+            self.schedule_list = []
+            for s in schedules:
+                self.schedule_list.append(s)
+                s.time_to_schedule()
+                self.db.dump([s])
+        except Exception as e:
+            print(str(e))
+        finally:
+            self.lock.release()
 
     def reload_process(self):
         process_json = self.db.read_process_dynamic()
@@ -71,9 +78,9 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
             self.process[str(p['id'])] = p
 
     def restart(self):
-        #TODO
+        # TODO
         pass
-        
+
     def get_host(self):
         return self.controller.host
 
@@ -123,7 +130,8 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
             self.db.dump([robot, event])
             self.event_list.append(event)
         self.robot_list[robot.id] = (robot, datetime.now())
-        self.dbbi.dump_robot_performance(robot, self.id, self.name, self.company)
+        self.dbbi.dump_robot_performance(
+            robot, self.id, self.name, self.company)
         print("Keep Alive ", robot.id, datetime.now())
 
     async def handle_msgExecProcess(self, msg):
@@ -203,21 +211,27 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
             else:
                 exclude_robots = process_json['exclude_robots']
             priority = process_json['priority']
-            required = self.get_process_requirements_by_id(process_json['id_process'])
-            robot = self.__choose_robot(exclude_robots,priority, required)
-            if(not robot): #No enviamos nada porque no tenemos a quien enviarselo                
+            required = self.get_process_requirements_by_id(
+                process_json['id_process'])
+            robot = self.__choose_robot(exclude_robots, priority, required)
+            if(not robot):  # No enviamos nada porque no tenemos a quien enviarselo
                 return None, None
             id_robot = robot.id
         if not self.robot_list[id_robot][0].online:
             return None, None
         dt_string = datetime.now().strftime("%d-%m-%Y-%H%M%S")
-        process_json['id_schedule'] = id_schedule #Añadimos el id de ejecucion
-        process_json['log_file'] = dt_string+self.get_process_class_name_by_id(process_json['id_process'])+".log"
-        log = Log(id_schedule=id_schedule, id_process=process_json['id_process'], id_robot=id_robot, log_file_path=process_json['log_file'],process_name=self.get_process_name_by_id(process_json['id_process']))
+        # Añadimos el id de ejecucion
+        process_json['id_schedule'] = id_schedule
+        process_json['log_file'] = dt_string + \
+            self.get_process_class_name_by_id(
+                process_json['id_process'])+".log"
+        log = Log(id_schedule=id_schedule, id_process=process_json['id_process'], id_robot=id_robot,
+                  log_file_path=process_json['log_file'], process_name=self.get_process_name_by_id(process_json['id_process']))
         self.db.dump([log])
         process_json['id_log'] = log.id
         process_json['id_robot'] = id_robot
-        process_json['classname'] = self.get_process_class_name_by_id(process_json['id_process'])
+        process_json['classname'] = self.get_process_class_name_by_id(
+            process_json['id_process'])
         print(process_json)
         await self.__send_message(messages.ROUTE_ROBOT+id_robot, json.dumps(dict(messages.MSG_REQUEST_PROCESS, **({"PROCESS": process_json}))))
         return id_robot, log.id
@@ -235,10 +249,13 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
             log_memory = log
             self.log_list.append(log_memory)
         log_memory.write_log(self.pathlog_store)
+        self.db.dump([log_memory])
         if(log_memory.finished):
-            print("La ejecucion del proceso ",log.process_name, " con id log ", log.id, " ha terminado")
-            event = Event(body = "Robot "+self.robot_list[log.id_robot][0].name+" ha terminado de ejecutar el proceso "+str(self.get_process_name_by_id(log.id_process)), msgtype=MSG_TYPE.PROCESS_EXEC)
-            self.db.dump([event, log_memory])
+            print("La ejecucion del proceso ", log.process_name,
+                  " con id log ", log.id, " ha terminado")
+            event = Event(body="Robot "+self.robot_list[log.id_robot][0].name+" ha terminado de ejecutar el proceso "+str(
+                self.get_process_name_by_id(log.id_process)), msgtype=MSG_TYPE.PROCESS_EXEC)
+            self.db.dump([event])
             self.lock.acquire()
             try:
                 schedule_process = next(
@@ -250,29 +267,35 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
                 if not schedule_process.get_forever():
                     self.schedule_list.remove(schedule_process)
 
-            except:
+            except Exception as e:
                 print("No schedule, quiza no cargado en memoria todavia")
+                print(str(e))
             finally:
                 self.lock.release()
 
     async def do_job_schedule(self, id_schedule, process_json, forever):
-        # try:
-        schedule_process = next(
-            x for x in self.schedule_list if x.id == id_schedule)
-        id_robot, id_log = await self.__send_process_json(schedule_process.id, schedule_process.id_robot, process_json)
-        schedule_process.id_robot_temp = id_robot  # TESTEANDO
-        schedule_job = schedule.get_jobs(id_schedule)[0]
-        if not id_robot and not id_log:
-            event = Event(body="El proceso "+self.get_process_name_by_id(schedule_process.get_processid()) +
-                          " no se va a ejecutar porque no hay ningun robot capaz de hacerlo", msgtype=MSG_TYPE.PROCESS_ERROR)
-            self.db.dump([event, schedule_process])
-            return
+        self.lock.acquire()
+        try:
+            schedule_process = next(
+                x for x in self.schedule_list if x.id == id_schedule)
+            id_robot, id_log = await self.__send_process_json(schedule_process.id, schedule_process.id_robot, process_json)
+            schedule_process.id_robot_temp = id_robot  # TESTEANDO
+            schedule_job = schedule.get_jobs(id_schedule)[0]
+            if not id_robot and not id_log:
+                event = Event(body="El proceso "+self.get_process_name_by_id(schedule_process.get_processid()) +
+                              " no se va a ejecutar porque no hay ningun robot capaz de hacerlo", msgtype=MSG_TYPE.PROCESS_ERROR)
+                self.db.dump([event, schedule_process])
+                return
 
-        if not forever:
-            schedule.cancel_job(schedule_job)
-        self.db.dump([schedule_process])
-        # except:
-        #    print("Schedule error en el lanzamiento, problema en base de datos o en un robot?")
+            if not forever:
+                schedule.cancel_job(schedule_job)
+            self.db.dump([schedule_process])
+        except Exception as e:
+            print(
+                "Schedule error en el lanzamiento, problema en base de datos o en un robot?")
+            print(str(e))
+        finally:
+            self.lock.release()
 
     def __choose_robot(self, exclude_robots, priority_process, required):
         candidate = None
@@ -333,16 +356,16 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
                     return True
         return False
 
-    def is_robot_schedule(self, id_robot, id_schedule):
-        robot = self.robot_list[id_robot][0]
-        if robot.process_running:
-            if robot.process_running['log'].id_schedule == id_schedule:
-                return True
-        else:
-            for p in robot.process_list:
-                if p['log'].id_schedule == id_schedule:
-                    return True
-        return False
+    # def is_robot_schedule(self, id_robot, id_schedule):
+    #     robot = self.robot_list[id_robot][0]
+    #     if robot.process_running:
+    #         if robot.process_running['log'].id_schedule == id_schedule:
+    #             return True
+    #     else:
+    #         for p in robot.process_list:
+    #             if p['log'].id_schedule == id_schedule:
+    #                 return True
+    #     return False
 
     def get_process_by_id(self, id_process):
         if str(id_process) in self.process:
@@ -369,7 +392,7 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
             return self.process[str(id_process)]['description']
         return None
 
-    def get_log(self, id_log = None):
+    def get_log(self, id_log=None):
         import rpa_orchestrator.lib.messagesjson.logjson as logjson
         return logjson.get_log(id_log)
 
@@ -384,8 +407,8 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
     def get_robot(self, id_robot):
         import rpa_orchestrator.lib.messagesjson.robotjson as robotjson
         return robotjson.get_robot(id_robot)
-        
-    def get_process(self, id_process = None):
+
+    def get_process(self, id_process=None):
         import rpa_orchestrator.lib.messagesjson.processjson as process
         return process.get_process(id_process)
 
@@ -395,17 +418,18 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
                 data = json.load(json_file)
                 return data
         except:
-            print("No existe el formulario del proceso solicitado "+str(id_process)+" se envia vacio")
+            print("No existe el formulario del proceso solicitado " +
+                  str(id_process)+" se envia vacio")
             return []
 
     def get_events(self, filters=None):
         events_json = self.db.read_events(filters)
         return JSONEncoder().encode([x for x in events_json])
 
-    def get_all_schedules(self, filters = None):
+    def get_all_schedules(self, filters=None):
         import rpa_orchestrator.lib.messagesjson.schedulejson as schjson
         return schjson.get_all_schedules(filters)
-    
+
     def get_all_process(self) -> json:
         return self.process
 
@@ -434,23 +458,30 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
         return stats.get_main_stats()
 
     def set_schedule(self, id_schedule, process_json) -> bool:
+        self.lock.acquire()
         try:
-            process_dict = json.loads(process_json)
-            schedule_process = next(
-                x for x in self.schedule_list if x.id == int(id_schedule))
-        except:
-            return False
-        
-        process_dict['process']['id_process'] = schedule_process.get_processid()
-        process_dict['process']['parameters'] = json.loads(
-            schedule_process.schedule_json)['process']['parameters']
-        self.remove_schedule(id_schedule)
-        schedule_process = ScheduleProcess(id=schedule_process.id, id_robot=process_dict['process']['id_robot'], schedule_json=json.dumps(
-            process_dict), function=self.do_job_schedule)
-        schedule_process.time_to_schedule()
-        self.db.dump([schedule_process])
-        self.schedule_list.append(schedule_process)
-        return True
+            try:
+                process_dict = json.loads(process_json)
+                schedule_process = next(
+                    x for x in self.schedule_list if x.id == int(id_schedule))
+            except:
+                return False
+
+            process_dict['process']['id_process'] = schedule_process.get_processid()
+            process_dict['process']['parameters'] = json.loads(
+                schedule_process.schedule_json)['process']['parameters']
+            self.remove_schedule(id_schedule)
+            schedule_process = ScheduleProcess(id=schedule_process.id, id_robot=process_dict['process']['id_robot'], schedule_json=json.dumps(
+                process_dict), function=self.do_job_schedule)
+            schedule_process.time_to_schedule()
+            self.db.dump([schedule_process])
+            self.schedule_list.append(schedule_process)
+
+            return True
+        except Exception as e:
+            print(str(e))
+        finally:
+            self.lock.release()
 
     def set_event_read(self, id_event):
         event = self.db.read_events({'id': id_event})
@@ -464,29 +495,37 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
         self.db.dump([file])
 
     def add_process(self, process_json):
-        json_edit = json.loads(process_json)
-        id_robot = json_edit['process']['id_robot']
-        if not self.get_process_class_name_by_id(json_edit['process']['id_process']): #Comprobamos si existe el proceso
-            print("No existe el proceso")
-            return None
-        if id_robot:
-            if not id_robot in self.robot_list:
-                print("No existe ese robot")
+        self.lock.acquire()
+        try:
+            json_edit = json.loads(process_json)
+            id_robot = json_edit['process']['id_robot']
+            # Comprobamos si existe el proceso
+            if not self.get_process_class_name_by_id(json_edit['process']['id_process']):
+                print("No existe el proceso")
                 return None
-            robot = self.robot_list[id_robot][0]
-            if not robot or not robot.online or not self.__is_capable(self.get_process_requirements_by_id(json_edit['process']['id_process']), robot):
-                print("No se puede ejecutar el proceso porque no existe el robot, no esta online o no es capaz de hacer ese proceso")
+            if id_robot:
+                if not id_robot in self.robot_list:
+                    print("No existe ese robot")
+                    return None
+                robot = self.robot_list[id_robot][0]
+                if not robot or not robot.online or not self.__is_capable(self.get_process_requirements_by_id(json_edit['process']['id_process']), robot):
+                    print(
+                        "No se puede ejecutar el proceso porque no existe el robot, no esta online o no es capaz de hacer ese proceso")
+                    return None
+            if(not id_robot and self.__is_any_capable(self.get_process_requirements_by_id(json_edit['process']['id_process'])) == 0):
+                print("No hay robot para ejecutar")
                 return None
-        if(not id_robot  and self.__is_any_capable(self.get_process_requirements_by_id(json_edit['process']['id_process'])) == 0):
-            print("No hay robot para ejecutar")
-            return None
-        schedule_process = ScheduleProcess(
-            id_robot=id_robot, schedule_json=process_json, function=self.do_job_schedule)
-        self.db.dump([schedule_process])
-        self.schedule_list.append(schedule_process)
-        id_schedule = schedule_process.time_to_schedule()
-        self.db.dump([schedule_process])
-        return id_schedule
+            schedule_process = ScheduleProcess(
+                id_robot=id_robot, schedule_json=process_json, function=self.do_job_schedule)
+            self.db.dump([schedule_process])
+            self.schedule_list.append(schedule_process)
+            id_schedule = schedule_process.time_to_schedule()
+            self.db.dump([schedule_process])
+            return id_schedule
+        except Exception as e:
+            print("Error al añadir el proceso ", str(e))
+        finally:
+            self.lock.release()
 
     def remove_schedule(self, id_schedule):
         self.lock.acquire()
@@ -496,6 +535,7 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
                     x for x in self.schedule_list if x.id == int(id_schedule))
                 schedule_process.set_forever(False)
             except:
+                print(str(e))
                 return False
 
             schedule_job = schedule.get_jobs(int(id_schedule))[0]
@@ -523,8 +563,10 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
 
             self.db.dump([schedule_process])
             self.dbbi.dump_execution(schedule_process, None,
-                                self.id, self.name, self.company)
+                                     self.id, self.name, self.company)
             return True
+        except Exception as e:
+            print(str(e))
         finally:
             self.lock.release()
 
@@ -539,7 +581,8 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
         return False
 
     def run(self):
-        asyncio.run(self.__send_message(messages.ROUTE_ROBOT+"general", json.dumps(messages.MSG_START_ORCH)))
+        asyncio.run(self.__send_message(messages.ROUTE_ROBOT +
+                    "general", json.dumps(messages.MSG_START_ORCH)))
         while True:
             for (key, value) in self.robot_list.items():
                 if((datetime.now() - value[1]).seconds > TIME_KEEP_ALIVE and value[0].online):
@@ -547,8 +590,8 @@ class Orchestrator(ListenerMsg,metaclass=Singleton):
                     event = Event(
                         body="Robot "+value[0].name+" se ha desconectado. ", msgtype=MSG_TYPE.CONNECTION)
                     self.db.dump([event, value[0]])
-                    self.dbbi.dump_robot(value[0], self.id, self.name, self.company)
+                    self.dbbi.dump_robot(
+                        value[0], self.id, self.name, self.company)
                     self.event_list.append(event)
 
             asyncio.run(schedule.run_pending())
-

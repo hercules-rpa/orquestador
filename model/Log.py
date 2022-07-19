@@ -27,7 +27,7 @@ class Log:
         self.finished = False
     
     def update_log(self,new_data):
-        if self.log_file is not None:
+        if self.log_file and not self.log_file.closed:
             self.log_file.write(new_data)
             self.log_file.flush()
         self.data = self.data + new_data
@@ -72,8 +72,9 @@ class Log:
     def end_log(self,end_timestamp):
         self.finished = True
         self.end_time = end_timestamp
+        self.completed = 100
         self.update_log("["+Utils.time_to_str(time.time())+"]"+" Process"+str(self.id_process)+"@Robot"+self.id_robot+" "+"Proceso "+self.process_name+" Finalizado\n")
 
-        if(self.log_file is not None):
+        if(self.log_file and not self.log_file.closed):
             self.log_file.close()
 

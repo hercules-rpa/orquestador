@@ -6,20 +6,18 @@ from datetime import datetime
 from model.process.Proceso3.Modelo_Ejecucion import Modelo_Ejecucion
 
 
-
 LINK_GRANTS = r'https://ec.europa.eu/info/funding-tenders/opportunities/data/referenceData/grantsTenders.json'
 LINK_TOPIC_DETAILS = r'https://ec.europa.eu/info/funding-tenders/opportunities/data/topicDetails/{}.json'
 LINK_CALL_FOR_GRANT = r'https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/{}'
-
 
 class GrantsEuropeExtractor():
     """
     Extractor de la información sobre grants y tenders de la página de ec.europa.eu
     """
 
-    def __init__(self):
-        self.msg_notify = ""
+    def __init__(self, server: str="10.208.99.12"):
         self.result = []
+        self.server = server
 
     def get_grants_json(self):
         """
@@ -158,7 +156,7 @@ class GrantsEuropeExtractor():
             'Content-Type': 'application/json'
             }
             payload = json.dumps(array)
-            bbdd_url = "http://10.208.99.12:5000/api/orchestrator/process/convocatoria"
+            bbdd_url = "http://" + self.server + ":5000/api/orchestrator/process/convocatoria"
             response = requests.post(bbdd_url, headers=headers, data=payload)
             print(response.status_code)
             print(response.text)
@@ -166,14 +164,19 @@ class GrantsEuropeExtractor():
         return dict_call_urls
 
 
-    def search_europe(self):
+    def search_europe(self) -> list:
+        """
+        Método que busca todas las convocatorias europeas.
+
+        :return Devuelve un array con las convocatorias europeas. Si no hay ninguna devuelve None.
+        """
         response = requests.get(LINK_GRANTS, timeout=10)
         if response.ok:
             JSON = json.loads(response.content)
             for item in JSON['fundingData']['GrantTenderObj']:
                 dict_europe = {}
                 if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and float(item['publicationDateLong'])/1000 >= time.time():
-                    dict_europe['titulo'] = item['title']
+                    dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
                     dict_europe['url'] = LINK_CALL_FOR_GRANT.format(item['identifier'].lower())
                     dict_europe['fecha_publicacion'] = time.localtime(float(item['publicationDateLong'])/1000)
                     dict_europe['fecha_creacion'] = time.localtime(float(item['deadlineDatesLong'].pop())/1000)
@@ -185,14 +188,21 @@ class GrantsEuropeExtractor():
             return self.result
         return None
 
-    def search_europe_date(self, fecha_desde, fecha_hasta):
+    def search_europe_date(self, fecha_desde: str, fecha_hasta: str) -> list:
+        """
+        Método que busca todas las convocatorias europeas dentro de un rango de fechas.
+
+        :param fecha_desde str: Fecha de inicio de la búsqueda.
+        :param fecha_hasta str: Fecha del fin de la búsqueda.
+        :return Devuelve un array con las convocatorias europeas. Si no hay ninguna devuelve None.
+        """
         response = requests.get(LINK_GRANTS)
         if response.ok:
             JSON = json.loads(response.content)
             for item in JSON['fundingData']['GrantTenderObj']:
                 dict_europe = {}
-                if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and float(item['publicationDateLong'])/1000 >= time.mktime(time.strptime(fecha_desde, '%d/%m/%Y')):
-                    dict_europe['titulo'] = item['title']
+                if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and (float(item['publicationDateLong'])/1000 >= time.mktime(time.strptime(fecha_desde, '%Y-%m-%d'))) and (float(item['publicationDateLong'])/1000 < time.mktime(time.strptime(fecha_hasta, '%Y-%m-%d'))):
+                    dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
                     dict_europe['url'] = LINK_CALL_FOR_GRANT.format(item['identifier'].lower())
                     dict_europe['fecha_publicacion'] = float(item['publicationDateLong'])/1000
                     dict_europe['fecha_creacion'] = float(item['deadlineDatesLong'].pop())/1000
@@ -204,23 +214,68 @@ class GrantsEuropeExtractor():
             return self.result
         return None
 
-    def insert_database(self, array):
-        headers = {
-        'Content-Type': 'application/json'
-        }
-        payload = json.dumps(array)
-        bbdd_url = "http://10.208.99.12:5000/api/orchestrator/register/convocatorias"
-        response = requests.post(bbdd_url, headers=headers, data=payload)
-        self.msg_notify = str(response.status_code) + " --- " + response.text
+    def insert_database(self, array: list) -> None:
+        """
+        Método para insertar en la base de datos interna las convocatorias europeas seleccionadas.
 
-    def cambio_notificadas(self):
+        :param array list: Array con las convocatorias europeas que se deben insertar.
+        :return None
+        """
+        new_array = []
+        for i in array:
+            bbdd_url = "http://" + self.server + ":5000/api/orchestrator/register/convocatorias?url=" + i['url']
+            res = requests.get(bbdd_url)
+            if not res.ok:
+                new_array.append(i)
+        if new_array:
+            headers = {
+            'Content-Type': 'application/json'
+            }
+            payload = json.dumps(new_array)
+            bbdd_url = "http://" + self.server + ":5000/api/orchestrator/register/convocatorias"
+            response = requests.post(bbdd_url, headers=headers, data=payload)
+
+    def cambio_notificadas(self) -> None:
+        """
+        Método para cambiar en la base de datos interna las convocatorias notificadas.
+
+        :return None
+        """
         headers = {
         'Content-Type': 'application/json'
         }
         payload = "{ \"notificada\": true }"
         for i in self.result:
-            bbdd_url = "http://10.208.99.12:5000/api/orchestrator/register/convocatorias?url=" + i['url']
+            bbdd_url = "http://" + self.server + ":5000/api/orchestrator/register/convocatorias?url=" + i['url']
             response = requests.get(bbdd_url)
             JSON = json.loads(response.content)
-            bbdd_url = "http://10.208.99.12:5000/api/orchestrator/register/convocatoria/" + str(JSON[0]['id'])
-            patch = requests.patch(bbdd_url,headers=headers,data=payload)
+            if JSON[0]['notificada'] == False:
+                bbdd_url = "http://" + self.server + ":5000/api/orchestrator/register/convocatoria/" + str(JSON[0]['id'])
+                patch = requests.patch(bbdd_url,headers=headers,data=payload)
+
+    def search_europe_date_file(self, path: str, fecha_desde: str, fecha_hasta: str) -> list:
+        """
+        Método que busca todas las convocatorias europeas dentro de un rango de fechas dentro de un fichero.
+
+        :param fecha_desde str: Fecha de inicio de la búsqueda.
+        :param fecha_hasta str: Fecha del fin de la búsqueda.
+        :return Devuelve un array con las convocatorias europeas. Si no hay ninguna devuelve None.
+        """
+        file = open(path, "r",encoding='ISO-8859-1')
+        response = file.read()
+        file.close()
+        if response:
+            JSON = json.loads(response)
+            for item in JSON['fundingData']['GrantTenderObj']:
+                dict_europe = {}
+                if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and (float(item['publicationDateLong'])/1000 >= time.mktime(time.strptime(fecha_desde, '%Y-%m-%d'))) and (float(item['publicationDateLong'])/1000 < time.mktime(time.strptime(fecha_hasta, '%Y-%m-%d'))):
+                    dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
+                    dict_europe['url'] = LINK_CALL_FOR_GRANT.format(item['identifier'].lower())
+                    dict_europe['fecha_publicacion'] = float(item['publicationDateLong'])/1000
+                    dict_europe['fecha_creacion'] = float(item['deadlineDatesLong'].pop())/1000
+                    dict_europe['modelo_ejecucion'] = Modelo_Ejecucion.SUBVENCION.value
+                    dict_europe['_from'] = "EUROPA2020"
+                    dict_europe['notificada'] = False
+                    self.result.append(dict_europe)
+            return self.result
+        return None

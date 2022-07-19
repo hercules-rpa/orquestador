@@ -4,7 +4,6 @@ import requests, os
 from model.process.ProcessCommand import ProcessCommand, ProcessID, Pstatus
 import xml.dom.minidom
 
-VERSION         = "1.0"
 NAME            = "Extract XML"
 DESCRIPTION     = "Proceso para extraer información de un fichero xml."
 REQUIREMENTS    = []
@@ -16,9 +15,10 @@ class InfoResultado:
         self.hijos = hijos
 
 class ProcessExtractXml(ProcessCommand):
-    def __init__(self,id_schedule, id_log, id_robot, priority, log_file_path, parameters = None):
-        ProcessCommand.__init__(self,ID,NAME, DESCRIPTION, REQUIREMENTS, id_schedule, id_log,id_robot, priority, log_file_path, parameters)
-        
+    def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None):
+        ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
+                                id_schedule, id_log, id_robot, priority, log_file_path, parameters)
+  
 
     def traer_documento(self, origen, destino):
         if origen and destino:
@@ -33,7 +33,8 @@ class ProcessExtractXml(ProcessCommand):
             if os.path.exists(destino):
                 os.remove(destino)
             
-            open(destino, 'wb').write(file.content)
+            with open(destino, 'wb') as f:
+                f.write(file.content)
 
             return file.status_code
         return 404
@@ -48,11 +49,30 @@ class ProcessExtractXml(ProcessCommand):
                 for hijo in hijos:
                     nhijo = npadre.getElementsByTagName(hijo)
                     if hijo in nodos:
-                        result = result + self.obtener_hijos(nodos, hijo, nhijo)
+                        info = self.obtener_hijos(nodos, hijo, nhijo)
+                        result = result + info.hijos
+                        tratados.append(info.nodos_tratados)
                     else:
                         result.append((nhijo, []))
         
         return InfoResultado(tratados, result)
+    
+    def obtener_diccionario(self, filename:str, rootname:str, atribname:str, childsname:list):
+        result =  {}
+        if rootname and childsname:
+            mydoc = xml.dom.minidom.parse(filename)
+            collection = mydoc.documentElement  # -> Objeto raíz
+            if collection.localName != 'error':
+                nodos_padres = collection.getElementsByTagName(rootname)
+                for root in nodos_padres:
+                    childs = []
+                    if childsname:
+                        for child in childsname:
+                            childs += root.getElementsByTagName(child)
+                    
+                    result.setdefault(root.attributes[atribname].value, childs)
+                    #result[root.attributes[atribname].value] = childs
+        return result 
 
     def obtener_nodos(self, nodos:dict, filename:str):
         count = 0
@@ -86,14 +106,14 @@ class ProcessExtractXml(ProcessCommand):
         self.log.start_log(start)
         self.notificar_actualizacion("El proceso de extracción de información de fichero xml ha comenzado.")
         self.log.completed = 0
-
+        url:str = None
+        
         try:
-            url:str = self.parameters['url']           
+            url = self.parameters['url']           
         except:
             self.notificar_actualizacion('No se ha obtenido el parámetro url.')
-        
+                
         filename = self.parameters['filename']
-
         if url:            
             status_code = self.traer_documento(url, filename)
             self.log.completed = 33
@@ -104,12 +124,19 @@ class ProcessExtractXml(ProcessCommand):
             self.log.completed = 33
 
         if os.path.getsize(filename) < 10:
-            self.notificar_actualizacion('ERROR: fichero xml erróneo o incompleto')
+            self.notificar_actualizacion('ERROR: fichero xml erróneo o incompleto.')
         else:
             self.log.completed = 66
-            self.result =  self.obtener_nodos(self.parameters['nodos'], filename)
+            if 'nodos' in self.parameters:
+                self.result =  self.obtener_nodos(self.parameters['nodos'], filename)
 
-        if os.path.exists(filename):
+        #Solo eliminamos el fichero si no se ha pasado como parámetro la url, 
+        #ya que si se pasa la url el fichero lo hemos descargado nosotros.
+        delete_file = False
+        if url:
+            delete_file = True
+
+        if delete_file and os.path.exists(filename):
             os.remove(filename)
             
         self.log.completed = 100

@@ -1,0 +1,52 @@
+[
+   {
+      "type":"text",
+      "name":"orcid",
+      "label":"Orcid"
+   },
+   {
+      "type":"text",
+      "name":"personaref",
+      "label":"PersonaRef"
+   },
+   {
+      "type":"text",
+      "name":"email",
+      "label":"Email",
+      "validation":"optional|email"
+   },
+   {
+      "type":"select",
+      "options": {
+                  "1": "Matemáticas y Física",
+                  "2": "Química",
+                  "3": "Biología Celular y Molecular",
+                  "4": "Ciencias Biomédicas",
+                  "5": "Ciencias de la Naturaleza",
+                  "6": "Tecnologías Mecánicas y de la producción",
+                  "7": "Ingenierías de la Comunicación, Computación y Electrónica",
+                  "8": "Arquitectura, Ingeniería Civil y Urbanismo",
+                  "9": "Ciencias Sociales, Políticas, del Comportamiento y de Estudios de Género",
+                  "10": "Ciencias de la Educación",
+                  "11": "Ciencias Económicas y Empresariales",
+                  "12": "Derecho y Jurisprudencia",
+                  "13": "Historia, Geografía y Artes",
+                  "14": "Filosofía, Filología y Lingüística"
+               },
+      "placeholder":"Selecciona un comité",
+      "name": "comite",
+      "validation": "required",
+      "label":"comité de investigación"
+   },
+   {
+      "type":"text",
+      "name":"periodo",
+      "label":"Periodo",
+      "placeholder": "2020,2021 o 2016-2021",
+      "validation":"required"
+   },
+   {
+      "type":"submit",
+      "label":"Ejecutar"
+   }
+]

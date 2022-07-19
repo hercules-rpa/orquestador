@@ -1,0 +1,50 @@
+[
+    {
+        "type":"group",
+        "name":"nif_universidad",
+        "validation":"min:1,length",
+        "repeatable":true,
+        "add-label":"+ Add NIF",
+        "value":[
+           {
+              
+           }
+        ],
+        "children":[
+           {
+              "type":"text",
+              "name":"nif",
+              "label":"NIF"
+           }
+        ]
+     },   
+     {
+         "type" :"text",
+         "name" : "keywords",
+         "label": "Palabras de búsqueda"
+      },
+     {
+        "type":"group",
+        "name":"receivers",
+        "validation":"min:1,length",
+        "repeatable":true,
+        "add-label":"+ Add receiver",
+        "value":[
+           {
+              
+           }
+        ],
+        "children":[
+           {
+              "type":"text",
+              "name":"receiver",
+              "label":"Receiver",
+              "validation":"email"
+           }
+        ]
+     },
+    {
+       "type":"submit",
+       "label":"Ejecutar"
+    }
+ ]

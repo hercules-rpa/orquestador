@@ -10,14 +10,8 @@ from model.process.ProcessCommand import Pstatus as pstatus
 from model.process.ProcessCommand import ProcessID
 from model.process.ProcessPdfToTable import ProcessPdfToTable
 import json
+import datetime
 #conda install -c conda-forge/label/gcc7 ghostscript
-
-
-#Posibles atributos
-    # - pagina/s
-    # - busqueda de un valor
-    # - busqueda de una cabecera
-    # - tipo, concensiones (contendrá 3 tablas?)
 
 
 NAME            = "Extract tables" 
@@ -26,7 +20,7 @@ REQUIREMENTS    = ['RPA','numpy','pandas','xlsxwriter']
 ID              = ProcessID.EXTRACT_INFO_PDF.value
 DIRECTORY_FILES = "rpa_robot/files/"
 DIRECTORY_TEMP  = "rpa_robot/files/temp"
-KEYWORDS_REFERENCIA = ['referencia','proyecto','referencia proyecto']
+
 
 class ProcessExtractInfoPDF(ProcessCommand):
     def __init__(self,id_schedule, id_log, id_robot, priority, log_file_path, parameters = None):
@@ -43,15 +37,22 @@ class ProcessExtractInfoPDF(ProcessCommand):
             paths            = self.parameters['paths']
             nif_universidad  = self.parameters['nif_universidad']
             solicitudes      = self.parameters['solicitudes']
+            keywords         = ['referencia','proyecto','referencia proyecto']
             keys_solicitudes = [*solicitudes.keys()]
             value_search     = nif_universidad+keys_solicitudes
-            excel_result     = []
-            
+            names = [*solicitudes.items()]
+            for name in names:
+                value_search.append(name[1])
+            print(value_search)
+            dict_result      = {}
+            excel_paths     = []
+            content = ''
             for f in paths:
                 f_name, _ = os.path.splitext(f)
                 name_file = f_name.split('/')[-1]
                 #Tratamiento antes para ver las paginas
                 dict_page, pages_set = self.get_page(f, value_search)
+                content += json.dumps(dict_page)+"\n"
                 self.update_log("El proceso ha encontrado en una primera búsqueda las paginas donde se encuentran los datos a buscar: "+json.dumps(dict_page),True)
                 if len(pages_set) > 0:
                     pages = ",".join(map(str,pages_set))
@@ -61,12 +62,14 @@ class ProcessExtractInfoPDF(ProcessCommand):
                     parameters_pdf['files'].append({'path':f,'page':pages})
                     dfs = self.get_table(parameters_pdf)
                     if not dfs:
-                        return 
+                        self.result = None
+                        self.update_log("No se ha encontrado ningun dataframe en "+str(name_file),True)
+                        continue 
 
                     self.log.completed = 50
                     self.update_log("Procedemos a exportar el dataframe a Excel",True)
                     try:
-                        fichero, investigadores_desconocidos = self.to_excel(name_file, value_search, solicitudes, pages_set, dfs)
+                        fichero, investigadores_desconocidos = self.to_excel(name_file, value_search, solicitudes, pages_set, dfs, self.parameters['keywords'])
                     except Exception as e:
                         self.log.state = "ERROR"
                         self.log.completed = 100
@@ -77,11 +80,12 @@ class ProcessExtractInfoPDF(ProcessCommand):
                         self.log.end_log(time.time())
                         return
 
-                    excel_result.append(fichero)
+                    excel_paths.append(fichero)
                     if len(investigadores_desconocidos) > 0:
                         self.update_log("Referencias que se ha encontrado, pero no estaba en SGI: "+" ,".join(investigadores_desconocidos),True)
                         self.update_log("Se procede a hacer una segunda búsqueda para obtener datos faltantes",True)
                         dict_page, pages_set = self.get_page(f, investigadores_desconocidos)
+                        content += json.dumps(dict_page)+"\n"
                         self.update_log("El proceso ha encontrado en una segunda búsqueda las paginas donde se encuentran los datos que no coinciden con el SGI: "+json.dumps(dict_page),True)
                         if len(pages_set) > 0:
                             pages = ",".join(map(str,pages_set))
@@ -90,10 +94,8 @@ class ProcessExtractInfoPDF(ProcessCommand):
                             parameters_pdf['excel'] = False
                             parameters_pdf['files'].append({'path':f,'page':pages})
                             dfs = self.get_table(parameters_pdf)
-                            if not dfs:
-                                return 
                             try:
-                                fichero, investigadores_desconocidos = self.to_excel(name_file+"Desconocidos", value_search, solicitudes, pages_set, dfs)
+                                fichero, investigadores_desconocidos = self.to_excel(name_file+"Desconocidos", value_search, solicitudes, pages_set, dfs, self.parameters['keywords'])
                             except Exception as e:
                                 self.log.state = "ERROR"
                                 self.log.completed = 100
@@ -103,17 +105,14 @@ class ProcessExtractInfoPDF(ProcessCommand):
                                 self.result = None
                                 self.log.end_log(time.time())
                                 return
-
-
-
-                
-                    
                 else:
                     self.update_log("No existen paginas con las "+",".join(map(str,value_search))+" en "+name_file,True)
             self.log.completed = 100
             self.state = pstatus.FINISHED
             self.update_log("Proceso finalizado correctamente. ",True)
-            self.result = excel_result
+            dict_result['files'] = excel_paths
+            dict_result['content'] = content
+            self.result = dict_result
             self.log.end_log(time.time())
             return
 
@@ -134,15 +133,19 @@ class ProcessExtractInfoPDF(ProcessCommand):
         pspdf = ProcessPdfToTable(self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters)
         pspdf.add_data_listener(self)
         pspdf.execute()
-        dfs = pspdf.result[0]
-        self.update_log("Llamada al módulo de tecnologias cognitivas terminada con ÉXITO",True)
+
         if pspdf.log.state == "ERROR":
-            self.log.state = "ERROR"
-            self.log.completed = 100
-            self.state = pstatus.FINISHED
-            self.log.end_log(time.time())
-            
+            self.update_log("Llamada al módulo de tecnologias cognitivas ha terminado con ERROR",True)
             self.result = None
+            return None
+        
+        if pspdf.result and len(pspdf.result)>0:
+            dfs = pspdf.result[0]
+            if pspdf.log.state != "ERROR":
+                self.update_log("Llamada al módulo de tecnologias cognitivas terminada con ÉXITO",True)
+                self.update_log("Se han recuperado "+str(len(pspdf.result))+" tablas",True)
+        else:
+            self.update_log("No se ha recuperado ninguna tabla",True)
             return None
         return dfs
         
@@ -170,9 +173,9 @@ class ProcessExtractInfoPDF(ProcessCommand):
         self.log.completed = 25
         return values_per_page, sorted(set(total_pages))
 
-    def to_excel(self, name, values_search, solicitudes, page_set, dfs):
+    def to_excel(self, name, values_search, solicitudes, page_set, dfs, keywords):
         self.update_log("Creamos el fichero excel "+"resolucion_"+name+".xlsx",True)
-        writer = pd.ExcelWriter(DIRECTORY_FILES+"resolucion_"+name+".xlsx", engine="xlsxwriter")
+        writer = pd.ExcelWriter(DIRECTORY_FILES+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+"resolucion_"+name+".xlsx", engine="xlsxwriter")
         workbook = writer.book
         startrow = 2
         startcol = 0
@@ -248,7 +251,7 @@ class ProcessExtractInfoPDF(ProcessCommand):
                     if value in values_search:
                         value_find = True
 
-                    if value.lower() in KEYWORDS_REFERENCIA:
+                    if self.search_name_in_column(value.lower(),keywords):
                         referencia_columna = columna
 
                     if value_find:
@@ -286,6 +289,11 @@ class ProcessExtractInfoPDF(ProcessCommand):
         writer.save()
         return "resolucion_"+name+".xlsx", referencias_investigadores
 
+    def search_name_in_column(self, name_column : str, keywords: list) -> bool:
+        for keyword in keywords:
+            if name_column.lower() == keyword:
+                return True
+        return False
 
     def pause(self):
         pass

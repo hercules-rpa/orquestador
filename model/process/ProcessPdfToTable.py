@@ -33,6 +33,7 @@ class ProcessPdfToTable(ProcessCommand):
         self.log.start_log(time.time())
         self.update_log("Proceso de extracción de tablas PDF ha empezado",True)
         self.log.completed = 5
+        self.result = None
         try:
             files          = self.parameters['files']
             excel       = self.parameters['excel']
@@ -48,7 +49,8 @@ class ProcessPdfToTable(ProcessCommand):
                 self.log.completed += 5
                 file = self.get_preprocessing_page(path, name_file, page)
                 dfs = self.get_solution(file)
-                list_df.append(dfs) #dfs es un array de df
+                if dfs:
+                    list_df.append(dfs) #dfs es un array de df
                 if excel:
                     self.update_log("Extraemos la tabla en formato Excel. ",True)
                     self.log.completed = 99

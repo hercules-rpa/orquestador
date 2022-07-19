@@ -1,0 +1,36 @@
+[
+   {
+      "type":"date",
+      "name":"start_date",
+      "label":"Fecha inicio"
+   },
+   {
+      "type":"date",
+      "name":"end_date",
+      "label":"Fecha fin"
+   },
+     {
+        "type":"group",
+        "name":"receivers",
+        "validation":"min:1,length",
+        "repeatable":true,
+        "add-label":"+ Add receiver",
+        "value":[
+           {
+              
+           }
+        ],
+        "children":[
+           {
+              "type":"text",
+              "name":"receiver",
+              "label":"Receiver",
+              "validation":"email"
+           }
+        ]
+     },
+    {
+       "type":"submit",
+       "label":"Ejecutar"
+    }
+ ]

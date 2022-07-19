@@ -132,8 +132,9 @@ class ControllerAMQP(metaclass=Singleton):
     async def on_message(self, message: IncomingMessage):
         async with message.process():
             await self.listener.notify_msg(message.body)
-            #print("[x] %r" % message.body)
-            #print(message.content_type)
-            #print(" [x] Received %r" % json.loads(message.body))
+            # print("[x] %r" % message.body)
+            # print(message.content_type)
+            # print(" [x] Received %r" % json.loads(message.body))
+
     def get_host(self):
         return self.host

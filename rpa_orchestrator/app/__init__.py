@@ -5,6 +5,7 @@ from rpa_orchestrator.app.common.error_handling import ObjectNotFound, AppErrorB
 #from .ext import ma, migrate
 from flask_cors import CORS
 from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import Middleware
+from flask_jwt_extended import JWTManager
 
 DIRECTORY_RESOURCES = 'rpa_orchestrator/app/orchestrator/api_v1_0/resources/*.py'
 
@@ -13,7 +14,9 @@ def create_app(settings_module):
     app = Flask(__name__)
     CORS(app)
     app.config.from_object(settings_module)
+    app.config['JWT_SECRET_KEY']='cca3b969dc408d3efe378ca42a076345'
     app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+    jwt = JWTManager(app)
     # Inicializa las extensiones
     #db.init_app(app)
     #ma.init_app(app)

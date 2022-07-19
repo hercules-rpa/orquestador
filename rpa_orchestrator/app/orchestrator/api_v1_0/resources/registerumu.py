@@ -5,8 +5,11 @@ from flask                                  import Blueprint, request, abort
 from flask.wrappers                         import Response
 from flask_restful                          import Api, Resource
 from rpa_orchestrator.ControllerProcess    import ControllerProcess
-from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import validate_create_process, validate_edit_process
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 import rpa_orchestrator.lib.dbprocess.models as model
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import jsonify
+import datetime
 
 cp = ControllerProcess()
 registerumu_v1_0_bp = Blueprint('registerumu_v1_0_bp', __name__)
@@ -15,58 +18,12 @@ api = Api(registerumu_v1_0_bp)
 def getBlueprint():
     return registerumu_v1_0_bp
 
-class SGI(Resource):
-    def get(self, id_sgi):
-        filter = {}
-        if not id_sgi:
-            arguments = {"id": int, "id_sgi": str, "url":str, "fecha_creacion":datetime}
-            for (key, value) in arguments.items():
-                if request.args.get(key)=="null":
-                    filter[key] = None
-                if not request.args.get(key) or request.args.get(key)=="null":
-                    if not request.args.get(key):
-                        filter[key] = None
-                    elif value is bool:
-                        filter[key] = request.args.get(key) in ['true','True'] #Lo tratamos como string para sacar que booleano es.
-                    elif value is datetime:
-                        filter[key] = datetime.fromtimestamp(request.args.get(key)).isoformat()
-                    else:
-                        filter[key] = request.args.get(key, type = value)
-        else:
-            filter['id'] = id_sgi
-        resp = cp.get_sgi(filter)
-        if not resp:
-            abort(404, description="Resource not found")
-        return Response(resp,mimetype='application/json')
-
-    def post(self):
-        sgi_list = json.dumps(request.get_json(force=True))
-        try:
-            sgi_list = json.loads(sgi_list, object_hook=lambda d: model.Sgi(**d))
-            cp.dump(sgi_list)
-            resp = json.dumps({"status": "ok", "sgi": [x.id for x in sgi_list], "description":"SGI Created"})
-            return Response(resp, status=201, mimetype='application/json')
-        except Exception as e:
-            abort(400, description=str(e))
-    
-    def patch(self, id_sgi):
-        new_parameters = request.get_json()
-        black_list = ['id','fecha_creacion']
-        for key in black_list:
-            if key in new_parameters:
-                del new_parameters[key]
-        resp = cp.update_sgi(id_sgi, new_parameters)
-        if not resp:
-            abort(404, description="Error intentado actualizar la sgi_convocatoria con id "+str(id_sgi))
-        resp = json.dumps({"status": "ok", "SGI": id_sgi, "description":"SGI Updated"})
-        return Response(resp,mimetype='application/json')
-
 class Convocatoria(Resource):
     def get(self, id_convocatoria = None):
         filter = {}
         if not id_convocatoria:
             arguments = {"id": int, "fecha_creacion": datetime, "fecha_publicacion": datetime, "titulo": str, "_from": str, "url":str, "entidad_gestora":str, 
-                        "entidad_convocante":str, "area_tematica":str, "observaciones":str, "sgiid": int, "basereguladora":int, "notificada":bool, "unidad_gestion":str, "modelo_ejecucion":str}
+                        "entidad_convocante":str, "area_tematica":str, "observaciones":str, "id_sgi": str, "basereguladora":int, "idproceso":int, "notificada":bool, "unidad_gestion":str, "modelo_ejecucion":str}
             for (key, value) in arguments.items():
                 if request.args.get(key)=="null":
                     filter[key] = None
@@ -113,7 +70,7 @@ class Solicitud(Resource):
     def get(self, id_solicitud = None):
         filter = {}
         if not id_solicitud:
-            arguments = {"id": int, "id_solicitud": int, "email": str, "concesion":bool, "referencia_proyecto": str, "IP": str, "fecha_creacion": datetime, "sgiid": int}
+            arguments = {"id": int, "id_solicitud": int, "email": str, "concesion":bool, "referencia_proyecto": str, "IP": str, "fecha_creacion": datetime}
             for (key, value) in arguments.items():
                 if request.args.get(key)=="null":
                     filter[key] = None
@@ -161,7 +118,7 @@ class Base_Reguladora(Resource):
     def get(self, id_basereguladora = None):
         filter = {}
         if not id_basereguladora:
-            arguments = {"id": int, "id_base": str, "fecha_creacion": datetime, "titulo": str, "url": str, "notificada":bool}
+            arguments = {"id": int, "id_base": str, "fecha_creacion": datetime, "titulo": str, "url": str, "notificada":bool, "seccion": str, "departamento": str}
             for (key, value) in arguments.items():
                 if request.args.get(key)=="null":
                     filter[key] = None
@@ -203,11 +160,11 @@ class Base_Reguladora(Resource):
         resp = json.dumps({"status": "ok", "Base Reguladora": id_basereguladora, "description":"Base Reguladora Updated"})
         return Response(resp,mimetype='application/json')
 
-class Noticia(Resource):
-    def get(self, id_noticia = None):
+class Ejecucion_Boletin(Resource):
+    def get(self, id_notificacion = None):
         filter = {}
-        if not id_noticia:
-            arguments = {"id": int, "titulo": str, "url": str, "autor": str,"fecha": datetime, "notificada":bool}
+        if not id_notificacion:
+            arguments = {"id": int, "fecha_inicio":datetime, "fecha_fin":datetime, "fecha_ejecucion": datetime, "exito" : bool}
             for (key, value) in arguments.items():
                 if request.args.get(key)=="null":
                     filter[key] = None
@@ -215,44 +172,367 @@ class Noticia(Resource):
                     if not request.args.get(key) or request.args.get(key)=="null":
                         filter[key] = None
                     elif value is bool:
-                        filter[key] = request.args.get(key) in ['true','True'] #Lo tratamos como string para sacar que booleano es.
-                    elif value is datetime:
-                        filter[key] = datetime.fromtimestamp(request.args.get(key)).isoformat()
+                        filter[key] = request.args.get(key) in ['true','True']
                     else:
-                        filter[key] = request.args.get(key, type = value)
+                        filter[key] = request.args.get(key, type = value)         
         else:
-            filter['id'] = id_noticia
-        resp = cp.get_noticia(filter)
+            filter['id'] = id_notificacion
+        resp = cp.get_ejecucion_boletin(filter)
         if not resp:
             abort(404, description="Resource not found")
         return Response(resp,mimetype='application/json')
     
     def post(self):
-        noticia_list = json.dumps(request.get_json(force=True))
+        notificacion_list = json.dumps(request.get_json(force=True))
         try:
-            noticia_list = json.loads(noticia_list, object_hook=lambda d: model.Noticia(**d))
-            cp.dump(noticia_list)
-            resp = json.dumps({"status": "ok", "Noticias": [x.id for x in noticia_list], "description":"Noticia Created"})
+            notificacion_list = json.loads(notificacion_list, object_hook=lambda d: model.Ejecucion_Boletin(**d))
+            cp.dump(notificacion_list)
+            resp = json.dumps({"status": "ok", "Ejecucion_Boletin": [x.id for x in notificacion_list], "description":"Ejecucion_Boletin Created"})
             return Response(resp, status=201, mimetype='application/json')
         except Exception as e:
             abort(400, description=str(e))
 
-    def patch(self, id_noticia):
+    def patch(self, id_notificacion):
         new_parameters = request.get_json()
         black_list = ['id','fecha_creacion']
         for key in black_list:
             if key in new_parameters:
                 del new_parameters[key]
-        resp = cp.update_noticia(id_noticia, new_parameters)
+        resp = cp.update_ejecucion_notificacion(id_notificacion, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la noticia con id "+str(id_noticia))
-        resp = json.dumps({"status": "ok", "Noticia": id_noticia, "description":"Noticia Updated"})
+            abort(404, description="Error intentado actualizar la ejecucion del boletin con id "+str(id_notificacion))
+        resp = json.dumps({"status": "ok", "Ejecucion_Boletin": id_notificacion, "description":"Ejecucion_Boletin Updated"})
         return Response(resp,mimetype='application/json')
 
+class Ultima_Ejecucion_Boletin(Resource):
+    def get(self):
+        resp = cp.get_ejecucion_boletin_ultima()
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')  
 
-api.add_resource(SGI,'/api/orchestrator/register/sgi_convocatorias/<int:id_solicitud>',endpoint='sgi_convocatorias')
-api.add_resource(SGI,'/api/orchestrator/register/sgi_convocatoria/<int:id_solicitud>',endpoint='get_sgi_convocatoria')
-api.add_resource(SGI,'/api/orchestrator/register/sgi_convocatoria/<int:id_solicitud>',endpoint='patch_sgi_convocatoria')
+#Proceso 4
+class AreaTematica(Resource):
+    def get(self, id_areatematica = None):
+        filter = {}
+        if not id_areatematica:
+            arguments = {"id": int, "nombre": str, "fuente":str, "descripcion": str}
+            for (key, value) in arguments.items():
+                if request.args.get(key)=="null":
+                    filter[key] = None
+                if request.args.get(key, type = value):
+                    if not request.args.get(key) or request.args.get(key)=="null":
+                        filter[key] = None
+                    elif value is bool:
+                        filter[key] = request.args.get(key) in ['true','True']
+                    else:
+                        filter[key] = request.args.get(key, type = value)
+            resp = cp.get_areatematica(filter)
+        else:
+            resp = cp.get_areatematica_id(id_areatematica)
+       
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')
+    
+    def post(self):
+        areatematica = request.get_json(force=True)
+        
+        if(len(areatematica) > 1):
+            abort(400, description="Solo se permite una única insercción de area tematica a la vez")
+        areatematica = areatematica[0]
+  
+        if 'parents' in areatematica and areatematica['parents']['id']:
+            if 'parents' in areatematica['parents']:
+                abort(400, description="No se permite que exista un padre dentro de otro padre")           
+            areatematica_p = json.loads(cp.get_areatematica_id(int(areatematica['parents']['id'])))
+            print(areatematica_p)
+            del areatematica_p['padre']
+            del areatematica_p['hijos']
+            del areatematica['parents']
+            areatematica_p = json.loads(json.dumps(areatematica_p), object_hook=lambda d: model.Areatematica(**d))
+            areatematica = json.loads(json.dumps(areatematica), object_hook=lambda d: model.Areatematica(**d))
+            areatematica_p.parents.append(areatematica) #le metemos el hijo al padre
+            cp.dump([areatematica_p])
+        else:
+            del areatematica['parents']
+            areatematica = json.loads(json.dumps(areatematica), object_hook=lambda d: model.Areatematica(**d))
+            cp.dump([areatematica])
+        resp = json.dumps({"status": "ok", "id": areatematica.id, "description":"Area tematica Created"})
+        return Response(resp, status=201, mimetype='application/json')
+
+
+    def patch(self, id_areatematica):
+        new_parameters = request.get_json()
+        black_list = ['id']
+        for key in black_list:
+            if key in new_parameters:
+                del new_parameters[key]
+        resp = cp.update_areatematica(id_areatematica, new_parameters)
+        if not resp:
+            abort(404, description="Error intentado actualizar el area tematica con id "+str(id_areatematica))
+        resp = json.dumps({"status": "ok", "Area tematica": id_areatematica, "description":"Area tematica Updated"})
+        return Response(resp,mimetype='application/json')
+
+class Investigador(Resource):
+    def get(self, id_investigador = None):
+        filter = {}
+        if not id_investigador:
+            arguments = {"id": int, "nombre": str, "email": str, "perfil":bool}
+            for (key, value) in arguments.items():
+                if request.args.get(key)=="null":
+                    filter[key] = None
+                if request.args.get(key, type = value):
+                    if not request.args.get(key) or request.args.get(key)=="null":
+                        filter[key] = None
+                    elif value is bool:
+                        filter[key] = request.args.get(key) in ['true','True']
+                    else:
+                        filter[key] = request.args.get(key, type = value)
+        else:
+            filter['id'] = id_investigador
+        resp = cp.get_investigador(filter)
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')
+    
+    def post(self):
+        investigadores = json.dumps(request.get_json(force=True))
+        try:
+            print(investigadores)
+            investigadores = json.loads(investigadores, object_hook=lambda d: model.Investigador(**d))
+            cp.dump(investigadores)
+            resp = json.dumps({"status": "ok", "Investigadores": [x.id for x in investigadores], "description":"Investigador Created"})
+            return Response(resp, status=201, mimetype='application/json')
+        except Exception as e:
+            print(str(e))
+            abort(400, description=str(e))
+
+    def patch(self, id_investigador):
+        new_parameters = request.get_json()
+        black_list = ['id']
+        for key in black_list:
+            if key in new_parameters:
+                del new_parameters[key]
+        resp = cp.update_investigador(id_investigador, new_parameters)
+        if not resp:
+            abort(404, description="Error intentado actualizar el investigador con id "+str(id_investigador))
+        resp = json.dumps({"status": "ok", "Investigador": id_investigador, "description":"Investigador Updated"})
+        return Response(resp,mimetype='application/json')
+
+class CalificacionArea(Resource):
+    def get(self, id_investigador = None):
+        filter = {}
+        if not id_investigador:
+            arguments = {"id": int, "idinvestigador": int, "idarea": int, "puntuacion": float}
+            for (key, value) in arguments.items():
+                if request.args.get(key)=="null":
+                    filter[key] = None
+                if request.args.get(key, type = value):
+                    if not request.args.get(key) or request.args.get(key)=="null":
+                        filter[key] = None
+                    elif value is bool:
+                        filter[key] = request.args.get(key) in ['true','True']
+                    else:
+                        filter[key] = request.args.get(key, type = value)
+        else:
+            filter['id'] = id_investigador
+        resp = cp.get_calificacionArea(filter)
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')
+
+    @token_required
+    def post(self):
+        calificaciones = json.dumps(request.get_json(force=True))
+        try:
+            calificaciones_inv = []
+            idinv = get_jwt_identity()
+            for calificacion in json.loads(calificaciones):
+                if calificacion['puntuacion'] > 5:
+                    calificacion['puntuacion'] = 5
+                elif calificacion['puntuacion'] < 1:
+                    calificacion['puntuacion'] = 1
+                calificacion['idinvestigador'] = idinv #añadido el idinvestigador
+                calificaciones_inv.append(calificacion)
+            calificaciones = json.loads( json.dumps(calificaciones_inv), object_hook=lambda d: model.Calificacionarea(**d))
+            
+            cp.dump(calificaciones)
+            cp.calcular_puntuaciones_areas(calificaciones)
+            resp = json.dumps({"status": "ok", "calificaciones": [x.id for x in calificaciones], "description":"Calificaciones Created"})
+            return Response(resp, status=201, mimetype='application/json')
+        except Exception as e:
+            print(e)
+            return Response(json.dumps({"status": "ERROR", "message":"Error al calificar "+str(e)}), status = 400, mimetype='application/json')
+
+    def patch(self, id_calificacion):
+        new_parameters = request.get_json()
+        black_list = ['id']
+        for key in black_list:
+            if key in new_parameters:
+                del new_parameters[key]
+        resp = cp.update_calificacionArea(id_calificacion, new_parameters)
+        if not resp:
+            abort(404, description="Error intentado actualizar la calificacion con id "+str(id_calificacion))
+        resp = json.dumps({"status": "ok", "Calificacion": id_calificacion, "description":"Calificacion Updated"})
+        return Response(resp,mimetype='application/json')
+    
+    @token_required
+    def delete(self):
+        load = request.args.get('load')
+        print(load)
+        idinv = get_jwt_identity()
+        print(idinv)
+        if cp.delete_perfil(idinv):
+            if load:
+                cp.cargar_perfil(idinv)
+            resp = json.dumps({"status": "ok", "description":"Perfil Reseteado"})
+            return Response(resp, status=200, mimetype='application/json')
+        else:
+            resp = json.dumps({"status": "Error", "description":"Perfil NO Reseteado"})
+            return Response(resp, status=400, mimetype='application/json')
+        
+
+class CalificacionConvocatoria(Resource):
+    def get(self, id_investigador = None):
+        filter = {}
+        if not id_investigador:
+            arguments = {"id": int, "idinvestigador": int, "idconvocatoriasgi": int, "titulo":str , "puntuacion": int}
+            for (key, value) in arguments.items():
+                if request.args.get(key)=="null":
+                    filter[key] = None
+                if request.args.get(key, type = value):
+                    if not request.args.get(key) or request.args.get(key)=="null":
+                        filter[key] = None
+                    elif value is bool:
+                        filter[key] = request.args.get(key) in ['true','True']
+                    else:
+                        filter[key] = request.args.get(key, type = value)
+        else:
+            filter['id'] = id_investigador
+        resp = cp.get_calificacionConvocatoria(filter)
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')
+    
+    @token_required
+    def post(self):
+        calificaciones = json.dumps(request.get_json(force=True))
+        try:
+            calificaciones = json.loads(calificaciones, object_hook=lambda d: model.Calificacionconvocatoria(**d))
+            cp.dump(calificaciones)
+            resp = json.dumps({"status": "ok", "calificaciones": [x.id for x in calificaciones], "description":"Calificaciones Created"})
+            return Response(resp, status=201, mimetype='application/json')
+        except Exception as e:
+            abort(400, description=str(e))
+
+    def patch(self, id_calificacion):
+        new_parameters = request.get_json()
+        black_list = ['id']
+        for key in black_list:
+            if key in new_parameters:
+                del new_parameters[key]
+        resp = cp.update_calificacionConvocatoria(id_calificacion, new_parameters)
+        if not resp:
+            abort(404, description="Error intentado actualizar la calificacion con id "+str(id_calificacion))
+        resp = json.dumps({"status": "ok", "Calificacion": id_calificacion, "description":"Calificacion Updated"})
+        return Response(resp,mimetype='application/json')
+
+class NotificacionInvestigador(Resource):
+    def get(self, id_notInv = None):
+        filter = {}
+        if not id_notInv:
+            arguments = {"id": int, "idinvestigador": int, "idconvocatoriasgi": int, "idcalificacionarea": int, "idcalificacionConvocatoria": int, "notificacion": bool, "fechacreacion":datetime}
+            for (key, value) in arguments.items():
+                if request.args.get(key)=="null":
+                    filter[key] = None
+                if request.args.get(key, type = value):
+                    if not request.args.get(key) or request.args.get(key)=="null":
+                        filter[key] = None
+                    elif value is bool:
+                        filter[key] = request.args.get(key) in ['true','True']
+                    elif value is datetime:
+                        filter[key] = datetime.fromtimestamp(request.args.get(key)).isoformat()
+                    else:
+                        filter[key] = request.args.get(key, type = value)      
+        else:
+            filter['id'] = id_notInv
+        resp = cp.get_notificacionInvestigador(filter)
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')
+
+    def post(self):
+        notificacionesInv = json.dumps(request.get_json(force=True))
+        try:
+            notificacionesInv = json.loads(notificacionesInv, object_hook=lambda d: model.Notificacioninvestigador(**d))
+            cp.dump(notificacionesInv)
+            resp = json.dumps({"status": "ok", "Notificaciones ": [x.id for x in notificacionesInv], "description":"Notificaciones Investigadores Created"})
+            return Response(resp, status=201, mimetype='application/json')
+        except Exception as e:
+            return Response(json.dumps({"status":"error","message":str(e)}), status=400, mimetype='application/json')
+
+    def patch(self, id_notinv):
+        new_parameters = request.get_json()
+        black_list = ['id','fechaCreacion']
+        for key in black_list:
+            if key in new_parameters:
+                del new_parameters[key]
+        resp = cp.update_notificacionInvestigador(id_notinv, new_parameters)
+        if not resp:
+            abort(404, description="Error intentado actualizar la notificacion con id "+str(id_notinv))
+        resp = json.dumps({"status": "ok", "notificacion": id_notinv, "description":"Notificacion Updated"})
+        return Response(resp,mimetype='application/json')
+
+class NotificacionInvestigadorLast(Resource):
+    def get(self):
+        resp = cp.get_notificacion_investigador_last()
+        if not resp:
+            abort(404, description="Resource not found")
+        return Response(resp,mimetype='application/json')
+
+class FeedbackConvocatoria(Resource):
+    @token_required
+    def post(self, idconvocatoria, util):
+        utilidad_c = {}
+        utilidad_c['no'] = -0.25
+        utilidad_c['si'] = 0.25
+        idinv = get_jwt_identity()
+        try:
+            if not util in utilidad_c:
+                return Response(json.dumps({"status": "ERROR", "message":"bad syntaxis"}), status = 400, mimetype='application/json')
+            if cp.feedback_convocatoria(idconvocatoria, idinv, utilidad_c[util]):
+                return Response(json.dumps({"status":"ok"}),status=201,mimetype='application/json')
+            else:
+                return Response(json.dumps({"status": "ERROR", "message":"Ocurrió un error inesperado, consulte el log para más información"}), status = 400, mimetype='application/json')
+        except Exception as e:
+            return Response(json.dumps({"status": "ERROR", "message":str(e)}), status = 400, mimetype='application/json')
+
+class Token(Resource):
+    #https://content.breatheco.de/lesson/what-is-JWT-and-how-to-implement-with-Flask#%C2%BFpor-qu%C3%A9-usar-jwt-token
+    def post(self):
+        #Generamos el token, en el front le pasamos 
+        user = request.json.get("iduser", None)
+        password = request.json.get("password", None)
+        if password != "qhj!f<F4s@7F{3Y":
+            return Response(json.dumps({"message":"bad password"}),status=401,mimetype='application/json')
+        access_token = create_access_token(identity=user, expires_delta=datetime.timedelta(days=6))
+        result = {}
+        result['access_token'] = access_token
+        return Response(json.dumps(result),mimetype='application/json')
+
+class PerfilRecomendacion(Resource):
+    @token_required
+    @jwt_required()
+    def get(self):
+        idinv = get_jwt_identity()
+        filter = {}
+        filter['id'] = idinv
+        result = cp.get_areatematica_pretty(idinv)
+        return Response(result,mimetype='application/json')
+
+
+
 api.add_resource(Convocatoria,'/api/orchestrator/register/convocatorias',endpoint='convocatorias')
 api.add_resource(Convocatoria,'/api/orchestrator/register/convocatoria/<int:id_convocatoria>',endpoint='patch_convocatoria')
 api.add_resource(Convocatoria,'/api/orchestrator/register/convocatoria/<int:id_convocatoria>',endpoint='get_convocatoria')
@@ -262,6 +542,28 @@ api.add_resource(Solicitud,'/api/orchestrator/register/solicitud/<int:id_solicit
 api.add_resource(Base_Reguladora,'/api/orchestrator/register/basesreguladoras',endpoint='basesreguladoras')
 api.add_resource(Base_Reguladora,'/api/orchestrator/register/basereguladora/<int:id_basereguladora>',endpoint='get_basereguladora')
 api.add_resource(Base_Reguladora,'/api/orchestrator/register/basereguladora/<int:id_basereguladora>',endpoint='patch_basereguladora')
-api.add_resource(Noticia,'/api/orchestrator/register/noticias',endpoint='noticias')
-api.add_resource(Noticia,'/api/orchestrator/register/noticia/<int:id_noticia>',endpoint='get_noticia')
-api.add_resource(Noticia,'/api/orchestrator/register/noticia/<int:id_noticia>',endpoint='patch_noticia')
+api.add_resource(AreaTematica,'/api/orchestrator/register/areatematica',endpoint='areas')
+api.add_resource(AreaTematica,'/api/orchestrator/register/areatematica/<int:id_areatematica>',endpoint='get_area')
+api.add_resource(AreaTematica,'/api/orchestrator/register/areatematica/<int:id_areatematica>',endpoint='patch_area')
+api.add_resource(Investigador,'/api/orchestrator/register/investigador',endpoint='investigadores')
+api.add_resource(Investigador,'/api/orchestrator/register/investigador/<int:id_investigador>',endpoint='get_investigador')
+api.add_resource(Investigador,'/api/orchestrator/register/investigador/<int:id_investigador>',endpoint='patch_investigador')
+api.add_resource(NotificacionInvestigador,'/api/orchestrator/register/notificacioninvestigador',endpoint='notificacioninvestigadores')
+api.add_resource(NotificacionInvestigadorLast,'/api/orchestrator/register/notificacioninvestigador/last',endpoint='get_lastnotificacioninvestigadores')
+api.add_resource(NotificacionInvestigador,'/api/orchestrator/register/notificacioninvestigador/<int:id_notificacioninvestigador>',endpoint='get_notificacioninvestigador')
+api.add_resource(NotificacionInvestigador,'/api/orchestrator/register/notificacioninvestigador/<int:id_notificacioninvestigador>',endpoint='patch_notificacioninvestigador')
+api.add_resource(FeedbackConvocatoria,'/api/orchestrator/register/feedback/<string:idconvocatoria>/<string:util>',endpoint='feedback_investigador')
+api.add_resource(CalificacionArea,'/api/orchestrator/register/calificacion/area',endpoint='calificacion_area')
+api.add_resource(CalificacionArea,'/api/orchestrator/register/calificacion/area/reset',endpoint='calificacion_area_reset')
+api.add_resource(CalificacionArea,'/api/orchestrator/register/calificacion/area/<int:id_calificacion>',endpoint='get_calificacion_area')
+api.add_resource(CalificacionArea,'/api/orchestrator/register/calificacion/area/<int:id_calificacion>',endpoint='patch_calificacion_area')
+api.add_resource(CalificacionConvocatoria,'/api/orchestrator/register/calificacion/convocatoria',endpoint='calificacion_convocatoria')
+api.add_resource(CalificacionConvocatoria,'/api/orchestrator/register/calificacion/convocatoria/<int:id_calificacion>',endpoint='get_calificacion_convocatoria')
+api.add_resource(CalificacionConvocatoria,'/api/orchestrator/register/calificacion/convocatoria/<int:id_calificacion>',endpoint='patch_calificacion_convocatoria')
+api.add_resource(Ejecucion_Boletin,'/api/orchestrator/register/ejecuciones_boletines',endpoint='ejecuciones_boletines')
+api.add_resource(Ejecucion_Boletin,'/api/orchestrator/register/ejecucion_boletin/<int:id_notificacion>',endpoint='get_ejecucion_boletin')
+api.add_resource(Ejecucion_Boletin,'/api/orchestrator/register/ejecucion_boletin/<int:id_notificacion>',endpoint='patch_ejecucion_boletin')
+api.add_resource(Ultima_Ejecucion_Boletin,'/api/orchestrator/register/ultima_ejecucion_boletin',endpoint='ultima_ejecucion_boletin')
+api.add_resource(Token,'/api/orchestrator/register/token',endpoint='get_token')
+api.add_resource(PerfilRecomendacion,'/api/orchestrator/register/profile',endpoint='get_profile_recomendation')
+

@@ -1,8 +1,24 @@
 from werkzeug.wrappers import Request, Response, ResponseStream
 from functools import wraps
 from flask import request, abort
+from flask_jwt_extended import get_jwt, verify_jwt_in_request
 #https://www.youtube.com/watch?v=qAqxSTG2870
 #https://www.youtube.com/watch?v=kJSl7pWeOfU
+
+def token_required(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if 'Authorization' in request.headers:
+            try:
+                verify_jwt_in_request()
+                return func(*args, **kwargs)
+            except Exception as e:
+                print(str(e))
+                abort(403, description="Token no valido")
+        else:
+            abort(403, description="Token no presente") 
+    return decorated_function
+
 def validate_create_process(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):

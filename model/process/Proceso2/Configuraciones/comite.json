@@ -1,0 +1,339 @@
+{
+    "1":{
+        "name": "Matemáticas y Física",
+        "autoria_orden": false,
+        "autoria_str" : "No relevante la posición",
+        "alerta_autores" : -1,
+        "libros": true,
+        "congresos":false,
+        "patentes":false
+    },
+    "2":{
+        "name": "Química",
+        "autoria_orden": true,
+        "autoria_str" : "Relevante, preferible mejor posición",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":true,
+        "criterio": {
+                "min_publicaciones": 5,
+                "puntuaciones":{
+                    "puntuacion_q1": 6.5,
+                    "puntuacion_q2": 2,
+                    "puntuacion_libro": 1,
+                    "puntuacion_capitulo_libro": 0.5
+                }               
+        }
+    },
+    "3":{
+        "name": "Biología Celular y Molecular",
+        "autoria_orden": true,
+        "autoria_str" : "Relevante, preferible mejor posición",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":true,
+        "criterio": {
+                "criterio1":{
+                    "num_publicaciones_q1":5
+                },
+                "criterio2":{
+                    "num_publicaciones_q2":5,
+                    "num_firmante_destacado":3
+                },
+                "criterio3":{
+                    "num_publicaciones_d1":3,
+                    "num_publicaciones_q1":4,
+                    "num_firmante_destacado_q1":2
+                },
+                "criterio4":{
+                    "num_publicaciones_q1q2":5
+                },
+                "puntuaciones":{
+                    "puntuacion_no_jcr_publicaciones": 0,
+                    "puntuacion_q1_autoria_destacada": 9,
+                    "puntuacion_q2_autoria_destacada": 7,
+                    "puntuacion_q3_autoria_destacada": 5,
+                    "puntuacion_q4_autoria_destacada": 3,
+                    "puntuacion_d1_autoria_destacada": 10,
+                    "puntuacion_q1_autoria_secundaria": 8,
+                    "puntuacion_q2_autoria_secundaria": 6,
+                    "puntuacion_q3_autoria_secundaria": 4,
+                    "puntuacion_q4_autoria_secundaria": 2,
+                    "puntuacion_d1_autoria_secundaria": 9.5,
+                    "puntuacion_q1_mas_6_autores": 7,
+                    "puntuacion_q2_mas_6_autores": 5,
+                    "puntuacion_q3_mas_6_autores": 3,
+                    "puntuacion_q4_mas_6_autores": 1,
+                    "puntuacion_d1_mas_6_autores": 9,
+                    "puntuacion_libros_autoria_destacada": 3,
+                    "puntuacion_libros_autoria_secundaria": 2,
+                    "puntuacion_libros_mas_6_autores": 1,
+                    "puntuacion_capitulos_libros_autoria_destacada": 3,
+                    "puntuacion_capitulos_libros_autoria_secundaria": 2,
+                    "puntuacion_capitulos_libros_mas_6_autores": 1
+                }
+        }
+    },
+    "4":{
+        "name": "Ciencias Biomédicas",
+        "autoria_orden": true,
+        "autoria_str" : "Relevante, preferible mejor posición",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":false,
+        "criterio": {
+                "criterio1":{
+                    "num_relevancia_alta":2,
+                    "num_relevancia_media":3
+                },
+                "criterio2":{
+                    "num_relevancia_media":1,
+                    "num_relevancia_alta":3,
+                    "num_relevancia_baja":1
+                },
+                "criterio3":{
+                    "num_relevancia_alta":4,
+                    "num_relevancia_baja":1
+                },
+                "puntuaciones":{
+                    "puntuacion_q1": 7.6,
+                    "puntuacion_q2": 5.1,
+                    "puntuacion_q3": 2.6,
+                    "puntuacion_q4": 0.1
+                },
+                "max_aportaciones_libros_capitulos": 1
+        }
+    },
+    "5":{
+        "name": "Ciencias de la Naturaleza",
+        "autoria_orden": false,
+        "autoria_str" : "No relevante la posición pero muchos autores puede bajar la evaluación, justificar carga de trabajo y aportación",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":false,
+        "criterio": {
+                "min_publicaciones": 5,
+                "puntuaciones":{
+                    "puntuacion_q1": 8,
+                    "puntuacion_q2": 7,
+                    "puntuacion_q3": 6,
+                    "puntuacion_q4": 1,
+                    "puntuacion_d1": 9
+                }                
+        }
+    },
+    "6":{
+        "name": "Tecnologías Mecánicas y de la producción",
+        "autoria_orden": false,
+        "autoria_str" : "No relevante la posición, justificar carga de trabajo y aportación",
+        "alerta_autores" : -1,
+        "libros": true,
+        "congresos":false,
+        "patentes":false
+    },
+    "7":{
+        "name": "Ingenierías de la Comunicación, Computación y Electrónica",
+        "autoria_orden": false,
+        "autoria_str" : "No relevante la posición, justificar carga de trabajo y aportación",
+        "alerta_autores" : 6,
+        "libros": true,
+        "congresos":true,
+        "patentes":true,
+        "criterio": {
+                "criterio1":{
+                    "num_relevancia_media":1,
+                    "num_relevancia_alta":2
+                },
+                "criterio2":{
+                    "num_relevancia_media":3,
+                    "num_relevancia_alta":1
+                },
+                "puntuaciones":{
+                    "puntuacion_q1": 10,
+                    "puntuacion_q2": 10,
+                    "puntuacion_q3": 6,
+                    "puntuacion_q4": 3,
+                    "puntuacion_congresos_clase1_ggs": 10,
+                    "puntuacion_congresos_clase2_ggs": 6,
+                    "puntuacion_congresos_clase3_ggs": 3,
+                    "puntuacion_patente_internacional": 10,
+                    "puntuacion_patente_nacional_explotacion": 6,
+                    "puntuacion_patente_nacional_no_explotacion": 3,
+                    "puntuacion_libro_investigacion": 6,
+                    "puntuacion_capitulo_libro_investigacion": 3
+                }                
+        }
+    },
+    "8":{
+        "name": "Arquitectura, Ingeniería Civil y Urbanismo",
+        "autoria_orden": false,
+        "autoria_str" : "Muchos autores puede bajar la evaluación, justificar carga de trabajo y aportación",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":false,
+        "criterio": {
+            "perfil_tecnologico": {
+                "min_aportaciones": 3
+            },
+            "perfil_no_tecnologico": {
+                "min_aportaciones": 2
+            }
+        }
+    },
+    "9":{
+        "name": "Ciencias Sociales, Políticas, del Comportamiento y de Estudios de Género",
+        "autoria_orden": false,
+        "autoria_str" : "Muchos autores puede bajar la evaluación, justificar carga de trabajo y aportación",
+        "alerta_autores" : 4,
+        "libros": true,
+        "congresos":false,
+        "patentes":false,
+        "criterio": {
+            "comportamiento": {
+                "min_publicaciones": 4,
+                "min_q1q2": 3,
+                "puntuaciones":{
+                    "puntuacion_q1": 10,
+                    "puntuacion_q2": 9,
+                    "puntuacion_q3": 8,
+                    "puntuacion_q4": 7,
+                    "puntuacion_fecyt_q1q1_publicaciones": 6,
+                    "puntuacion_fecyt_q3q4_publicaciones": 5,
+                    "puntuacion_spi_q1q2_libros": 4,
+                    "puntuacion_no_spi_libros": 1,
+                    "puntuacion_spi_q1q2_capitulos_libros": 2
+                },
+                "penalizaciones":{
+                    "n_autores_max_7":0.25
+                }
+                
+            },
+            "estudiosgenero": {
+                "min_publicaciones": 4,
+                "min_q1q2": 3,
+                "puntuaciones":{
+                    "puntuacion_q1": 10,
+                    "puntuacion_q2": 9,
+                    "puntuacion_q3": 8,
+                    "puntuacion_q4": 7,
+                    "puntuacion_fecyt_q1q1_publicaciones": 6,
+                    "puntuacion_fecyt_q3q4_publicaciones": 5,
+                    "puntuacion_spi_q1q2_libros": 4,
+                    "puntuacion_no_spi_libros": 1,
+                    "puntuacion_spi_q1q2_capitulos_libros": 2
+                },
+                "penalizaciones":{
+                    "n_autores_4_6":0.25,
+                    "n_autores_max_7":0.50
+                }                
+            },
+            "cienciassociales": {
+                "min_publicaciones": 4,
+                "min_q1q2": 3,
+                "puntuaciones":{
+                    "puntuacion_q1": 10,
+                    "puntuacion_q2": 9,
+                    "puntuacion_q3": 8,
+                    "puntuacion_q4": 7,
+                    "puntuacion_fecyt_q1q1_publicaciones": 6,
+                    "puntuacion_fecyt_q3q4_publicaciones": 5,
+                    "puntuacion_spi_q1q2_libros": 4,
+                    "puntuacion_no_spi_libros": 1,
+                    "puntuacion_spi_q1q2_capitulos_libros": 2
+                },
+                "penalizaciones":{
+                    "n_autores_4_6":0.25,
+                    "n_autores_max_7":0.50
+                }                
+            }
+        }
+    },
+    "10":{
+        "name": "Ciencias de la Educación",
+        "autoria_orden": true,
+        "autoria_str" : "más de 4 firmantes pueden penalizar, si las exigencias de su contenido y metodología no lo justifican",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":false,
+        "criterio": {
+                "min_publicaciones": 2,
+                "puntuaciones":{
+                    "puntuacion_jcr_publicaciones": 7,
+                    "puntuacion_sjr_q1q2_publicaciones": 7,
+                    "puntuacion_sjr_q3q4_publicaciones": 6,
+                    "puntuacion_fecyt_q1q2_publicaciones": 6,
+                    "puntuacion_fecyt_q3q4_publicaciones": 2,
+                    "puntuacion_dialnet_publicaciones": 2,
+                    "puntuacion_spi_q1_editorial_nacional_libros": 6,
+                    "puntuacion_spi_q1q2_editorial_extranjera_libros": 6
+                }                
+        }
+    },
+    "11":{
+        "name": "Ciencias Económicas y Empresariales",
+        "autoria_orden": false,
+        "autoria_str" : "Muchos autores puede bajar la evaluación",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":true,
+        "criterio":{
+                "min_publicaciones": 5,
+                "min_q1q2": 3,
+                "puntuaciones":{
+                    "puntuacion_q1": 8,
+                    "puntuacion_q2": 7,
+                    "puntuacion_q3": 6,
+                    "puntuacion_q4": 3.5,
+                    "puntuacion_sjr_q1_publicaciones": 7,
+                    "puntuacion_sjr_q2_publicaciones": 6,
+                    "puntuacion_spi_q1_editorial_internacional_libros": 6,
+                    "puntuacion_spi_q2_editorial_internacional_libros": 4,
+                    "puntuacion_spi_q1_editorial_nacional_libros": 4,
+                    "puntuacion_spi_q1_editorial_internacional_capitulos_libros": 3,
+                    "puntuacion_spi_q2_editorial_internacional_capitulos_libros": 2,
+                    "puntuacion_spi_q1_editorial_nacional_capitulos_libros": 2
+                }               
+        }
+    },
+    "12":{
+        "name": "Derecho y Jurisprudencia",
+        "autoria_orden": false,
+        "autoria_str" : "Muchos autores puede bajar la evaluación, justificar carga de trabajo y aportación",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":false
+    },
+    "13":{
+        "name": "Historia, Geografía y Artes",
+        "autoria_orden": false,
+        "autoria_str" : "Muchos autores puede bajar la evaluación, justificar carga de trabajo y aportación",
+        "alerta_autores" : 5,
+        "libros": true,
+        "congresos":false,
+        "patentes":false
+    },
+    "14":{
+        "name": "Filosofía, Filología y Lingüística",
+        "autoria_orden": true,
+        "autoria_str" : "Más de dos autores puede bajar la evaluación, justificar muy bien la carga de trabajo y aportación",
+        "alerta_autores" : 2,
+        "libros": true,
+        "congresos":false,
+        "patentes":false,
+        "criterio":{
+        	"min_publicaciones":5,
+                "puntuaciones":{
+                    "puntuacion_q1q2q3_publicaciones": 8,
+                    "puntuacion_q4_publicaciones": 7
+                }                
+        }
+    }
+}

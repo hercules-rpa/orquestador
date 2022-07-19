@@ -15,7 +15,7 @@ CREATE TABLE public.SCHEDULE (id SERIAL, id_robot VARCHAR(255), schedule_json TE
 CREATE TABLE public.PROCESS (id int4 NOT NULL, class varchar(255), name varchar(255) NOT NULL, requirements varchar(255), description varchar(255) NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.LOG (id SERIAL, id_schedule int4 NOT NULL, id_process int4 NOT NULL, id_robot varchar(255) NOT NULL, log_file_path varchar(255) NOT NULL, data TEXT, start_time timestamp, end_time timestamp, state varchar(255), finished bool NOT NULL, completed int4 NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.EVENT (id SERIAL, body varchar(255) NOT NULL, msgtype varchar(255) NOT NULL, time timestamp NOT NULL, sender varchar(255) NOT NULL, read bool NOT NULL, PRIMARY KEY (id));
-CREATE TABLE public.FILE (id SERIAL, name varchar(255) NOT NULL, absolute_path varchar(255) NOT NULL, directory varchar(255) NOT NULL, time timestamp NOT NULL, PRIMARY KEY (id));
+CREATE TABLE public.FILE (id SERIAL, name varchar(255) NOT NULL, absolute_path varchar(255) NOT NULL, url varchar(255), directory varchar(255) NOT NULL, time timestamp NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.ROBOT_SCHEDULE (Robotid varchar(255) NOT NULL, Scheduleid int4 NOT NULL, PRIMARY KEY (Robotid, Scheduleid));
 
 

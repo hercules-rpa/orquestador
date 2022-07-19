@@ -30,7 +30,7 @@ class ScheduleProcess:
 
     def get_forever(self):
         data = json.loads(self.schedule_json)
-        if data['time_schedule'] is None:
+        if not data['time_schedule']:
             return False
         return data['time_schedule']['forever']
 
@@ -43,19 +43,11 @@ class ScheduleProcess:
         return data['process']['priority']
         
     def is_active(self):
-        from rpa_orchestrator.orchestrator    import Orchestrator
-        orch = Orchestrator()
-        if self.id_robot_temp:
-            if orch.is_robot_schedule(self.id_robot_temp, self.id):
-                return True
         try: 
             schedule_job = schedule.get_jobs((self.id))[0]
             if self.get_forever():
                 return True
-            
-           
             return datetime.now() <= schedule_job.next_run
-            
         except:
             return False
     

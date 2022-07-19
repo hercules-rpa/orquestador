@@ -1,0 +1,45 @@
+{
+    "AMQP-SETTING":{
+        "user": "admin",
+        "password": "rpa123",
+        "host": "10.208.99.12",
+        "port": "5672",
+        "subscriptions": ["rpa.orchestrator","rpa.orchestrator.*"],
+        "exchange_name": "rpa",
+        "queue_name": "orchestrator"
+    },
+    "DB-PERSISTENCE":{
+        "user": "postgres",
+        "password": "docker",
+        "host": "10.208.99.12",
+        "port":"5432",
+        "database": "rpa"
+
+    },
+    "DB-PROCESS":{
+        "user": "postgres",
+        "password": "docker",
+        "host": "10.208.99.12",
+        "port":"5432",
+        "database": "process"
+
+    },
+    "DB-BI":{
+        "user": "cassandra",
+        "password": "cassandra",
+        "host": "localhost",
+        "port":"9042",
+        "keyspace": "rpa_bi"
+
+    },
+    "ORCHESTRATOR-SETTING":{
+        "id": "ORCH-REMOTE-1",
+        "name": "ORCH-REMOTE-PLEIADES",
+        "company": "UMU",
+        "pathlog_store": "/var/log/orchestrator/"
+    }
+    
+
+
+
+}

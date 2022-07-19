@@ -1,0 +1,17 @@
+{
+    "1":{
+        "name": "Titularidad"
+    },
+    "2":{
+        "name": "Cátedra"
+    },
+    "3":{
+        "name": "Profesor de Universidad Privada (PUP)"
+    },
+    "4":{
+        "name": "Profesor Contratado Doctor (PCD)"
+    },
+    "5":{
+        "name": "Profresor Ayudante Doctor (PAD)"
+    }
+}

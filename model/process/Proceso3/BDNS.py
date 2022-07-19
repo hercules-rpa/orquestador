@@ -8,79 +8,24 @@ import json
 import requests
 import re
 
-DOWNLOAD_DIR = "epic/rpa_orchestrator/files/"
+DOWNLOAD_DIR = "rpa_robot/files/"
 
 class BDNS:
 
-    def __init__(self):
+    def __init__(self, server: str="10.208.99.12"):
         self.array = []
         self.msg_notify = ""
+        self.server = server
 
-    def search(self, *args):
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=False)
-            context = browser.new_context(accept_downloads=True)
-            # Open new page
-            page = context.new_page()
-            page.goto(
-                "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatorias")
-            page.click("input[name=\"titulo\"]")
-            if len(args) == 1:
-                args = args[0].split()
-                #page.locator("select[name=\"tipoBusqPalab\"]").select_option("2")
-                #page.fill("input[name=\"titulo\"]", args[0])
-            else:
-                args = ['investigacion']
-                #page.fill("input[name=\"titulo\"]", "investigacion")
-            page.click("select[name=\"regionalizacion\"]")
-            page.press("select[name=\"regionalizacion\"]", "ArrowUp")
-            page.press("select[name=\"regionalizacion\"]", "ArrowUp")
-            page.click("button:has-text(\"Buscar\")")
+    def search_with_date(self, dD: time, dH: time, *args: str) -> dict:
+        """
+        Método para buscar, por fecha, convocatorias. Las convocatorias, adicionalmente, se guardan en un archivo CSV.
 
-            with page.expect_download() as download_info:
-                page.click("img[alt=\"icono csv\"]")
-            download = download_info.value
-
-            download.save_as("convocatorias.csv")
-
-            context.close()
-            browser.close()
-
-        data = {}
-        self.array = []
-        with open('convocatorias.csv', 'r', encoding='ISO-8859-1') as csvfile:
-            lines = csv.DictReader(csvfile, delimiter=',')
-            for row in lines:
-                if any(word in row['Título de la convocatoria'].lower() for word in args):
-                    key = row['Código BDNS']
-                    data[key] = row
-                    insert = {}
-                    insert['fecha_publicacion'] = time.mktime(time.strptime(data[key]['Fecha de registro'],'%d/%m/%Y'))
-                    insert['titulo'] = data[key]['Título de la convocatoria']
-                    insert['_from'] = 'BDNS - ' + data[key]['Administración']
-                    insert['url'] = 'https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/' + data[key]['Código BDNS']
-                    if 'transferencia' in str(data[key]['Título de la convocatoria']).lower():
-                        insert['unidad_gestion'] = 'OTRI'
-                    elif 'investigacion' in str(data[key]['Título de la convocatoria']).lower() or 'desarrollo' in str(data[key]['Título de la convocatoria']).lower():
-                        insert['unidad_gestion'] = 'UGI'
-                    else:
-                        insert['unidad_gestion'] = 'OTRI UGI'
-                    if 'ayuda' in str(data[key]['Título de la convocatoria']).lower() or 'subvencion'  in str(data[key]['Título de la convocatoria']).lower():
-                        insert['modelo_ejecucion'] = Modelo_Ejecucion.SUBVENCION.value
-                    elif 'prestamo' in str(data[key]['Título de la convocatoria']).lower():
-                        insert['modelo_ejecucion'] = Modelo_Ejecucion.PRESTAMO.value
-                    elif 'presentacion factura' in str(data[key]['Título de la convocatoria']).lower() or 'facturación' in str(data[key]['Título de la convocatoria']).lower():
-                        insert['modelo_ejecucion'] = Modelo_Ejecucion.FACTURACION.value
-                    insert['entidad_convocante'] = data[key]['Órgano']
-                    insert['notificada'] = False
-                    self.array.append(insert)
-        with open('convocatorias.json', 'w', encoding='utf-8') as jsonf:
-            json.dump(data, jsonf, ensure_ascii=False, indent=4)
-
-        self.insert_database(self.array)
-        return data
-
-    def search_with_date(self, dD, dH, *args):
+        :param dD time: Objeto time con la fecha inicial para la búsqueda.
+        :param dH time: Objeto time con la fecha final para la búsqueda.
+        :param args str: Argumento variable con las palabras clave para la búsqueda.
+        :return dict con los datos de las convocatorias que cumplen los criterios de la búsqueda.
+        """
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=False)
             context = browser.new_context(accept_downloads=True)
@@ -90,13 +35,11 @@ class BDNS:
                 "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatorias")
             page.click("input[name=\"titulo\"]")
             if len(args) == 1:
-                print(args)
                 args = args[0].split()
-                print(args)
                 #page.locator("select[name=\"tipoBusqPalab\"]").select_option("2")
                 #page.fill("input[name=\"titulo\"]", args[0])
             else:
-                args = ['investigación']
+                args = ['investigación', 'i+d']
                 #page.fill("input[name=\"titulo\"]", "investigacion")
             page.click("input[name=\"fecDesde\"]")
             page.fill("input[name=\"fecDesde\"]", time.strftime('%d/%m/%Y', dD))
@@ -120,13 +63,15 @@ class BDNS:
         with open('convocatorias.csv', 'r', encoding='ISO-8859-1') as csvfile:
             lines = csv.DictReader(csvfile, delimiter=',')
             for row in lines:
-                if any(word in row['Título de la convocatoria'].lower() for word in args):
+                bbdd_url = "http://" + self.server +":5000/api/orchestrator/register/convocatorias?titulo=" + row['Título de la convocatoria']
+                response = requests.get(bbdd_url)
+                if self.search_name_csv(row['Título de la convocatoria'].lower(), args) and response.status_code == 404:
                     key = row['Código BDNS']
                     data[key] = row
                     insert = {}
                     insert['fecha_publicacion'] = time.mktime(time.strptime(data[key]['Fecha de registro'],'%d/%m/%Y'))
                     insert['titulo'] = data[key]['Título de la convocatoria']
-                    insert['_from'] = 'BDNS - ' + data[key]['Administración']
+                    insert['_from'] = 'BDNS'
                     insert['url'] = 'https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/' + data[key]['Código BDNS']
                     if 'transferencia' in str(data[key]['Título de la convocatoria']).lower():
                         insert['unidad_gestion'] = 'OTRI'
@@ -149,27 +94,53 @@ class BDNS:
         self.insert_database(self.array)
         return data
 
-    def search_numbdns_csv(self, num_bdns) -> str:
-        with open('convocatorias.csv', 'r', encoding='ISO-8859-1') as csvfile:
+    def search_numbdns_csv(self, file: str, num_bdns: int) -> str:
+        """
+        Método que te devuelve a través del número de la BDNS la línea del archivo CSV de convocatorias, si existe.
+
+        :param file str: Path del archivo CSV con las convocatorias de la búsqueda.
+        :param num_bdns int: Número de la BDNS.
+        :return String con la línea de la convocatoria si existe. Sino te devuelve una cadena vacía.
+        """
+        with open(file, 'r', encoding='ISO-8859-1') as csvfile:
             lines = csv.reader(csvfile, delimiter=',')
             for row in lines:
                 if row[0] == num_bdns:
                     return row
             return ""
 
-    def search_name_csv(self, keyword):
-        response = {}
-        i = 0
-        with open('convocatorias.csv', 'r', encoding='ISO-8859-1') as csvfile:
+    def search_name_csv(self, titulo: str, conjunto: list) -> bool:
+        """
+        Método que te devuelve si una palabra está en una frase.
+
+        :param titulo str: Título de la convocatoria.
+        :param conjunto list: Lista de palabras.
+        :return Si la palabra está contenida en el título.
+        """
+        return any(word in titulo for word in conjunto)
+
+    def search_name_csv_file(self, path: str, conjunto: list) -> bool:
+        """
+        Método que te devuelve dado un listado de palabras si la convocatoria existe.
+
+        :param path str: Path del archivo CSV con las convocatorias de la búsqueda.
+        :param conjunto list: Lista de palabras.
+        :return String con la línea de la convocatoria si existe. Sino te devuelve una cadena vacía.
+        """
+        with open(path, 'r', encoding='ISO-8859-1') as csvfile:
             lines = csv.reader(csvfile, delimiter=',')
             for row in lines:
-                for string in row:
-                    if re.findall(keyword, string):
-                        response[i] = row[0]
-                        i += 1
-            return response
+                if any(word in row[6].lower() for word in conjunto):
+                    return True
+            return False
 
-    def obtain_resources_bdns(self, num_bdns):
+    def obtain_resources_bdns(self, num_bdns: int) -> list:
+        """
+        Método para obtener los recursos de una convocatoria.
+
+        :param num_bdns int: Número de la bdns.
+        :return list Lista con los paths de los recursos.
+        """
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=False)
             context = browser.new_context()
@@ -180,20 +151,40 @@ class BDNS:
                 str(num_bdns)+"&_search=false&nd=" + \
                 str(round(time.time()/10))+"&rows=50&page=1&sidx=&sord=asc"
             page.goto(url)
-            JSON = json.loads(page.content().split("\">")[1].split("</p")[0])
+            soup = BeautifulSoup(page.content(), 'html.parser')
+            JSON = json.loads(soup.find('pre').text)
             name_resources = []
-            for j in JSON['rows']:
-                url = "https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/" + \
-                    str(num_bdns) + "/document/" + str(j[0])
-                response = requests.request("GET", url, verify=False)
-                with open(DOWNLOAD_DIR + num_bdns + '_' + str(j[3]), 'wb') as file:
-                    file.write(response.content)
-                name_resources.append(num_bdns + '_' + str(j[3]))
+            if JSON['rows']:
+                for j in JSON['rows']:
+                    url = "https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/" + \
+                        str(num_bdns) + "/document/" + str(j[0])
+                    response = requests.request("GET", url, verify=False)
+                    with open(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]), 'wb') as file:
+                        file.write(response.content)
+                    name_resources.append(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]))
             context.close()
             browser.close()
             return name_resources
 
-    def obtain_data_bdns(self, num_bdns):
+    def obtain_resources_bdns_file(self, JSON: json) -> list:
+        """
+        Método para obtener el nombre de los ficheros descargados.
+
+        :param JSON json: JSON con la información de una convocatoria. test.
+        :return nombre de los recursos en una lista.
+        """
+        name_resources = []
+        if JSON['rows']:
+            return JSON['rows']
+        return name_resources
+
+    def obtain_data_bdns(self, num_bdns: int) -> dict:
+        """
+        Método para obtener una ampliación de la información de las convocatorias.
+
+        :param num_bdns int: Número de BDNS.
+        :return Diccionario con la información ampliada.
+        """
         url = 'https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/' + \
             str(num_bdns)
         response = requests.request('GET', url, verify=False)
@@ -203,25 +194,51 @@ class BDNS:
         for link in soup.find_all('div'):
             if link.find('h3') != None:
                 if link.find('p') != None:
-                    dicc[str(link.find('h3'))[4:-5]
-                         ] = str(link.find_all('p'))[4:-5]
+                    dicc[link.find('h3').text] = link.find('p').text
                 elif link.find('li') != None:
-                    dicc[str(link.find('h3'))[4:-5]
-                         ] = str(link.find_all('li'))[5:-6]
-        for key in dicc:
-            dicc[key] = re.sub(
-                "<p>|</p>|<li>|</li>|<a href=|target=\"_blank\">|</a>", "", dicc[key])
+                    dicc[link.find('h3').text] = ''.join(e.text for e in link.find_all('li'))
+        return dicc
+        
+    def obtain_data_bdns_file(self, path: str) -> dict:
+        """
+        Método para obtener una ampliación de la información de las convocatorias a través de un fichero.
+
+        :param path str: Path del fichero.
+        :return Diccionario con la información ampliada.
+        """
+        with open(path, 'r', encoding='ISO-8859-1') as file:
+            response_text = file.read()
+            file.close()
+        dicc = {}
+        soup = BeautifulSoup(response_text, 'html.parser')
+        i = 0
+        for link in soup.find_all('div'):
+            if link.find('h3') != None:
+                if link.find('p') != None:
+                    dicc[link.find('h3').text] = link.find('p').text
+                elif link.find('li') != None:
+                    dicc[link.find('h3').text] = ''.join(e.text for e in link.find_all('li'))
         return dicc
 
-    def insert_database(self, array):
+    def insert_database(self, array: list) -> None:
+        """
+        Método que inserta en la base de datos interna las convocatorias pasadas por parámetro.
+
+        :param array list: Array con las convocatorias a insertar.
+        """
         self.msg_notify = ""
         headers = {
         'Content-Type': 'application/json'
         }
         payload = json.dumps(array)
-        bbdd_url = "http://10.208.99.12:5000/api/orchestrator/register/convocatorias"
+        bbdd_url = "http://" + self.server +":5000/api/orchestrator/register/convocatorias"
         response = requests.post(bbdd_url, headers=headers, data=payload)
         self.msg_notify = str(response.status_code) + " --- " + response.text
 
-    def notify(self):
+    def notify(self) -> str:
+        """
+        Método para devolver un mensaje de log del proceso.
+
+        :return str mensaje de log.
+        """
         return self.msg_notify

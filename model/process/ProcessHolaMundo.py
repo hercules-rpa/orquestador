@@ -5,7 +5,7 @@ from model.Log import Log
 import Utils as Utils
 import time
 import asyncio
-
+import sys 
 NAME            = "Hola Mundo"
 DESCRIPTION     = "Proceso que envía una serie de mensajes a la salida estándar para utilizarlos como prueba"
 REQUIREMENTS    = []

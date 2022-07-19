@@ -18,7 +18,7 @@ class CaixaWebScraper():
         self.path = pathlib.Path(__file__).parent.resolve()
         self.opciones = self.set_options()
         self.driver = webdriver.Chrome(executable_path="/usr/lib/chromium-browser/chromedriver", options=self.opciones)
-
+        #self.driver = webdriver.Chrome(executable_path="C:/Users/jesus/git/rpa-plataform/hercules-rpa/webdriver/chromedriver.exe", options=self.opciones)
     def set_options(self):
         """"
         Establecer opciones para Chrome driver

@@ -1,0 +1,11 @@
+[    
+    {
+        "type":"text",
+        "name":"command_to_execute",
+        "label":"Comando a ejecutar"
+     },
+    {
+        "type":"submit",
+        "label":"Ejecutar"
+    }
+]

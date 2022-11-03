@@ -1,12 +1,17 @@
-from sqlalchemy import false
+from dataclasses import dataclass
 import rpa_orchestrator.lib.dbprocess.dbcon as dbprocess
 import json
 import numpy as np
 import rpa_orchestrator.lib.dbprocess.models as model
 from datetime import datetime
 import model.SGI as SGI
-import model.process.Proceso4.SRControlador as ControladorRecomendacion
-from model.process.Proceso4.model.ClassProcess4 import Investigador
+import model.process.Process4.RSController as RSController
+from model.process.Process4.model.ClassProcess4 import Investigador
+import glob
+
+DIRECTORY_PROCESS_CONFIG = 'model/process/Process*'
+SUBPATH_PROCESS_CONFIG   = 'Configurations/*.json'
+SUBPATH_PROCESS_DEFAULT_CONFIG   = 'static'
 
 
 class Singleton(type):
@@ -187,7 +192,7 @@ class ControllerProcess(metaclass=Singleton):
                 area_hijo['puntuacion'] = 0
             area_hijo[at['id']] = []
             if at['hijos']:
-                self._insert_area_dict(at['hijos'], area_hijo)
+                self._insert_area_dict(at['hijos'], area_hijo, idinv)
             area_dict[at['padre']].append(area_hijo)
         return area_dict
 
@@ -202,6 +207,11 @@ class ControllerProcess(metaclass=Singleton):
             area_tematica = json.loads(
                 self.get_areatematica_id(area_puntuacion.idarea))
             flag = True
+            #Comprobamos si el area solo es la root.
+            if not area_tematica['padre']:
+                area_tematica_padre = json.loads(self.get_areatematica_id(area_tematica['padre']))
+                self.dump([model.Calificacionarea(idinvestigador=area_puntuacion.idinvestigador, idarea=area_tematica_padre['id'], puntuacion=np.mean(puntuaciones))])
+                flag = False
             # Obtenemos el nodo padre del todo sin llegar al nodo root y pasamos a la funcion de recursividad
             while flag:
                 if area_tematica['padre']:
@@ -328,8 +338,8 @@ class ControllerProcess(metaclass=Singleton):
 
     def feedback_convocatoria(self, idconvocatoria, idinvestigador, puntuacion):
         sgi = SGI.SGI()
-        convocatoria = sgi.get_convocatoria(str(idconvocatoria))
-        areas_tematicas = sgi.get_convocatoria_area_tematica(
+        convocatoria = sgi.get_call(str(idconvocatoria))
+        areas_tematicas = sgi.get_subject_area_announcement(
             str(idconvocatoria))
         if not convocatoria or not areas_tematicas:
             return False
@@ -360,16 +370,21 @@ class ControllerProcess(metaclass=Singleton):
         for area in areas_tematicas:
             at = area['areaTematica']
             at_padre = at['padre']
+            
             while at_padre:
                 fuente = at_padre['nombre']
                 at_padre = at_padre['padre']
             filter = {}
-            filter['fuente'] = fuente
+            if at_padre: #No tiene padre, eso quiere decir que es la propia fuente este area, este caso es muy extraño, pero puede darse.
+                filter['fuente'] = fuente
+            else:
+                filter['fuente'] = at['nombre']
             filter['nombre'] = at['nombre']
             filter['descripcion'] = at['descripcion']
             area_id = self.get_areatematica(filter)
             if area_id:
                 area_id = (json.loads(area_id)[0])['id']
+                print(area_id)
                 self.__fedback_calificar(area_id, idinvestigador, puntuacion)
 
         new_parameters = {}
@@ -414,9 +429,60 @@ class ControllerProcess(metaclass=Singleton):
         if inv:
             inv = json.loads(inv)[0]
             investigador = Investigador(inv['id'], inv['nombre'], inv['email'], inv['perfil'])
-            ControladorRecomendacion.cargar_perfil(investigador)
+            RSController.cargar_perfil(investigador)
             return True
         return False
+    
+    def get_config_list(self):
+        modules_name = glob.glob(DIRECTORY_PROCESS_CONFIG)
+        list_configuradores = []
+        for folder_parent in modules_name:
+            folder_parent_split = folder_parent.split("/")[-1] #Cogemos la carpeta padre del configurador
+            folder_parent = folder_parent+"/"+SUBPATH_PROCESS_CONFIG
+            process_module_name = glob.glob(folder_parent)
+            for folder in process_module_name:
+                dict_process = {}
+                dict_process['proceso'] = folder_parent_split
+                dict_process['path'] = folder
+                dict_process['configurador'] = (folder.split("/")[-1]).split(".")[0]
+                list_configuradores.append(dict_process)
+        return json.dumps(list_configuradores)
+    
+    def get_config(self, path):
+        try:
+            with open(path, "r") as json_file:
+                data = json.load(json_file)
+                print(data)
+                return json.dumps(data)
+        except:
+            print("No existe el configurador solicitado")
+            return None
+
+    def patch_config(self, path, data):
+        if not self.get_config(path): #Comprobamos primero si existe el fichero
+            return False   
+        try:
+            with open(path, "w") as json_file:
+                json_file.write(data)
+                return True
+        except:
+            return False
+
+    def restore_config(self, path):
+        file = path.split('/')[-1]
+        path_static_file = path.split('/')[0:len(path.split('/'))-1]
+        path_static_file = "/".join(path_static_file)
+        path_static_file = path_static_file+"/"+SUBPATH_PROCESS_DEFAULT_CONFIG
+        data = self.get_config(path_static_file+"/"+file)
+        if not data:
+            return False
+        try:
+            with open(path, "w") as json_file:
+                json_file.write(data)
+                return True
+        except:
+            return False
+        
 
     def dump(self, object):
         self.dbprocess.dump(object)
@@ -454,3 +520,4 @@ class ControllerProcess(metaclass=Singleton):
     def delete_perfil(self, idinv):
         self.update_investigador(int(idinv), {"perfil": False})
         return self.dbprocess.delete_profile(idinv)
+

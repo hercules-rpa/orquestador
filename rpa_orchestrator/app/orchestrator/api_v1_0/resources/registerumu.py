@@ -5,12 +5,14 @@ from flask                                  import Blueprint, request, abort
 from flask.wrappers                         import Response
 from flask_restful                          import Api, Resource
 from rpa_orchestrator.ControllerProcess    import ControllerProcess
+from rpa_orchestrator.orchestrator      import Orchestrator
 from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 import rpa_orchestrator.lib.dbprocess.models as model
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import jsonify
 import datetime
 
+orch = Orchestrator()
 cp = ControllerProcess()
 registerumu_v1_0_bp = Blueprint('registerumu_v1_0_bp', __name__)
 api = Api(registerumu_v1_0_bp)
@@ -23,7 +25,7 @@ class Convocatoria(Resource):
         filter = {}
         if not id_convocatoria:
             arguments = {"id": int, "fecha_creacion": datetime, "fecha_publicacion": datetime, "titulo": str, "_from": str, "url":str, "entidad_gestora":str, 
-                        "entidad_convocante":str, "area_tematica":str, "observaciones":str, "id_sgi": str, "basereguladora":int, "idproceso":int, "notificada":bool, "unidad_gestion":str, "modelo_ejecucion":str}
+                        "entidad_convocante":str, "area_tematica":str, "observaciones":str, "id_sgi": str, "idproceso":int, "notificada":bool, "unidad_gestion":str, "modelo_ejecucion":str}
             for (key, value) in arguments.items():
                 if request.args.get(key)=="null":
                     filter[key] = None
@@ -345,10 +347,12 @@ class CalificacionArea(Resource):
     @token_required
     def post(self):
         calificaciones = json.dumps(request.get_json(force=True))
+        print(calificaciones)
         try:
             calificaciones_inv = []
             idinv = get_jwt_identity()
             for calificacion in json.loads(calificaciones):
+                del calificacion['nombre']
                 if calificacion['puntuacion'] > 5:
                     calificacion['puntuacion'] = 5
                 elif calificacion['puntuacion'] < 1:
@@ -493,6 +497,7 @@ class NotificacionInvestigadorLast(Resource):
 
 class FeedbackConvocatoria(Resource):
     @token_required
+    @jwt_required()
     def post(self, idconvocatoria, util):
         utilidad_c = {}
         utilidad_c['no'] = -0.25
@@ -508,14 +513,18 @@ class FeedbackConvocatoria(Resource):
         except Exception as e:
             return Response(json.dumps({"status": "ERROR", "message":str(e)}), status = 400, mimetype='application/json')
 
+
 class Token(Resource):
-    #https://content.breatheco.de/lesson/what-is-JWT-and-how-to-implement-with-Flask#%C2%BFpor-qu%C3%A9-usar-jwt-token
+    
     def post(self):
-        #Generamos el token, en el front le pasamos 
+        """Generamos un token para el investigador teniendo como información el iduser, idrobot y el token amqp del robot"""
         user = request.json.get("iduser", None)
-        password = request.json.get("password", None)
-        if password != "qhj!f<F4s@7F{3Y":
+        token = request.json.get("token", None)
+        robot = request.json.get("idrobot", None)
+        
+        if not orch.is_token_valid(robot, token):
             return Response(json.dumps({"message":"bad password"}),status=401,mimetype='application/json')
+
         access_token = create_access_token(identity=user, expires_delta=datetime.timedelta(days=6))
         result = {}
         result['access_token'] = access_token
@@ -523,7 +532,6 @@ class Token(Resource):
 
 class PerfilRecomendacion(Resource):
     @token_required
-    @jwt_required()
     def get(self):
         idinv = get_jwt_identity()
         filter = {}
@@ -531,7 +539,66 @@ class PerfilRecomendacion(Resource):
         result = cp.get_areatematica_pretty(idinv)
         return Response(result,mimetype='application/json')
 
+class InvestigadorPerfil(Resource):
+    #TODO Configurar seguridad
+    def get(self):
+        investigadores = cp.get_investigador()
+        result = []
+        if len(investigadores) > 0:
+            investigadores = json.loads(investigadores)
+        for inv in investigadores:
+            if inv['perfil']:
+                perfil = {}
+                perfil['nombre']   = inv['nombre']
+                perfil['email']    = inv['email']
+                perfil['tree']     = json.loads(cp.get_areatematica_pretty(inv['id']))
+                result.append(perfil)
+        return Response(json.dumps(result),mimetype='application/json')
 
+class ProcessConfigResource(Resource):
+    def get(self):
+        try:
+            path = request.args.get("path")
+            if not path:
+                data = cp.get_config_list()
+                if data:
+                    return Response(cp.get_config_list(),mimetype='application/json')
+            else:
+                data = cp.get_config(path)
+                if data:
+                    return Response(data,mimetype='application/json')
+            return Response(json.dumps({"status": "ERROR", "message":"No existe el configurador"}), status = 400, mimetype='application/json')
+        except Exception as e:
+            return Response(json.dumps({"status": "ERROR", "message":str(e)}), status = 400, mimetype='application/json')
+        
+    def patch(self):
+        try:
+            path = request.args.get("path")
+            data = json.dumps(request.get_json(force=True))
+            if not path:
+                return Response(json.dumps({"status": "ERROR", "message": "Es necesario una ruta para modificar"}), status = 400, mimetype='application/json')
+            else:
+                if cp.patch_config(path, data):
+                    return Response(json.dumps({"status": "Ok", "message": "Configurador modificado"}),mimetype='application/json')
+                else:
+                    return Response(json.dumps({"status": "ERROR", "message": "No se pudo modificar el configurador"}), status = 400, mimetype='application/json')
+        except Exception as e:
+            return Response(json.dumps({"status": "ERROR", "message": str(e)}), status = 400, mimetype='application/json')
+        
+    def post(self):
+        try:
+            path = request.args.get("path")
+            
+            if not path:
+                return Response(json.dumps({"status": "ERROR", "message": "Es necesario una ruta para modificar"}), status = 400, mimetype='application/json')
+            else:
+                if cp.restore_config(path):
+                    return Response(json.dumps({"status": "Ok", "message": "Configurador restaurado"}),mimetype='application/json')
+                else:
+                    return Response(json.dumps({"status": "ERROR", "message": "No se pudo restaurar el configurador"}), status = 400, mimetype='application/json')
+        except Exception as e:
+            return Response(json.dumps({"status": "ERROR", "message": str(e)}), status = 400, mimetype='application/json')
+        
 
 api.add_resource(Convocatoria,'/api/orchestrator/register/convocatorias',endpoint='convocatorias')
 api.add_resource(Convocatoria,'/api/orchestrator/register/convocatoria/<int:id_convocatoria>',endpoint='patch_convocatoria')
@@ -566,4 +633,5 @@ api.add_resource(Ejecucion_Boletin,'/api/orchestrator/register/ejecucion_boletin
 api.add_resource(Ultima_Ejecucion_Boletin,'/api/orchestrator/register/ultima_ejecucion_boletin',endpoint='ultima_ejecucion_boletin')
 api.add_resource(Token,'/api/orchestrator/register/token',endpoint='get_token')
 api.add_resource(PerfilRecomendacion,'/api/orchestrator/register/profile',endpoint='get_profile_recomendation')
-
+api.add_resource(InvestigadorPerfil,'/api/orchestrator/register/profile/investigadores',endpoint='get_profile_recomendation_all')
+api.add_resource(ProcessConfigResource,'/api/orchestrator/register/config',endpoint='process_config_list')

@@ -1,25 +1,17 @@
 [
    {
       "type":"text",
-      "name":"orcid",
-      "label":"Orcid"
-   },
-   {
-      "type":"text",
-      "name":"personaref",
-      "label":"PersonaRef"
-   },
-   {
-      "type":"text",
-      "name":"email",
-      "label":"Email",
-      "validation":"optional|email"
+      "name":"investigador",
+      "label":"Identificador de investigador(email,ORCID,personaRef)"
    },
    {
       "type":"select",
       "options": {
-                  "50": "Titularidad",
-                  "51": "Cátedra"
+                  "1": "Titularidad",
+                  "2": "Cátedra",
+                  "3": "Profesor de Universidad Privada (PUP)",
+                  "4": "Profesor Contratado Doctor (PCD)",
+                  "5": "Profresor Ayudante Doctor (PAD)"
                },
       "placeholder":"Selecciona una acreditación",
       "name": "tipo_acreditacion",
@@ -44,7 +36,7 @@
                   "13": "Arquitectura, ingeniería civil, construcción y urbanismo",
                   "14": "Derecho",
                   "15": "Ciencias económicas y ciencias empresariales",
-                  "16": "Ciencias económicas y ciencias empresariales",
+                  "16": "Ciencias Empresariales",
                   "17": "Ciencias de la educación",
                   "18": "Ciencias del comportamiento",
                   "19": "Ciencias sociales",
@@ -55,9 +47,5 @@
       "name": "comision",
       "validation": "required",
       "label":"comisión de investigación"
-   },
-   {
-      "type":"submit",
-      "label":"Ejecutar"
    }
 ]

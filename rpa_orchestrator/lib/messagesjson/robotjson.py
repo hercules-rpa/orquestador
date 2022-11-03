@@ -94,6 +94,7 @@ def get_robot(id_robot) -> json:
                     'registrations':robot.registrations,
                     'mac':robot.mac,
                     'python_version':robot.python_version,
+                    'token': robot.token,
                     'online': robot.online,
                     'time_online': 0 if not robot.online else datetime.now().timestamp() - robot.connected,
                     'last_seen':time.timestamp(),

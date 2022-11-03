@@ -1,4 +1,5 @@
 from logging import log
+from model.GlobalSettings import GlobalSettings
 from sqlalchemy import create_engine
 from sqlalchemy import Column, String, desc, asc, and_, or_, func
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,7 +9,7 @@ from rpa_orchestrator.lib.ScheduleProcess import ScheduleProcess
 from rpa_robot.robot import Robot
 from model.Event import Event
 from model.Log import Log
-from model.File import File
+from model.File  import File
 from datetime import datetime, timedelta
 import rpa_orchestrator.lib.persistence.modelToClass as modelToClass
 import rpa_orchestrator.lib.persistence.models as model
@@ -123,13 +124,20 @@ class ControllerDBPersistence(metaclass=Singleton):
                         session.commit()
 
             elif isinstance(object, File):
-                ans = model.File(id=object.id, name=object.name, absolute_path=object.absolute_path,
-                                 directory=object.directory, time=object.time.isoformat())
+                ans = model.File(id = object.id, name = object.name, url_cdn = object.url_cdn)
                 if not object.id:
                     session.add(ans)
                     session.commit()
                     session.refresh(ans)
                     object.id = ans.id
+
+            elif isinstance(object, model.GlobalSettings):
+                exists = session.query(model.GlobalSettings).filter_by(id=object.id).first()
+                if not exists:
+                    session.add(object)
+                    session.commit()
+                    session.refresh(object)
+
 
         session.close()
 
@@ -239,7 +247,7 @@ class ControllerDBPersistence(metaclass=Singleton):
             return modelToClass.toSchedule([schedule_db])[0]
         return None
 
-    def read_files(self, id):
+    def read_files(self,id):
         session = self.Session()
         if id:
             file_db = session.query(model.File).filter_by(id=id).first()
@@ -249,8 +257,189 @@ class ControllerDBPersistence(metaclass=Singleton):
         else:
             file_db = session.query(model.File).all()
             session.close()
-            return modelToClass.toFile(file_db)
+            return modelToClass.toFile(file_db)    
         return []
+
+
+    def get_global_settings_by_id(self, id=1):
+        session = self.Session()
+        global_settings = session.query(model.GlobalSettings).filter_by(id=id).first()
+        session.close()
+        if global_settings:
+            return modelToClass.toGlobal_Settings([global_settings])[0]
+        return None
+    
+    def update_global_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.GlobalSettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (global settings)")
+                session.close()
+                return False
+        session.close()
+        return False
+
+
+    def get_amqp_settings_by_id(self, id=1):
+        session = self.Session()
+        settings = session.query(model.AMQPSettings).filter_by(id=id).first()
+        session.close()
+        if settings:
+            return modelToClass.toAMQP_Settings([settings])[0]
+        return None
+    
+    def update_amqp_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.AMQPSettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (amqp settings)")
+                session.close()
+                return False
+        session.close()
+        return False
+
+    def get_dbpersistence_settings_by_id(self, id):
+        session = self.Session()
+        settings = session.query(model.DBPersistenceSettings).filter_by(id=id).first()
+        session.close()
+        if settings:
+            return modelToClass.toDBPersistence_Settings([settings])[0]
+        return None
+    
+    def update_dbpersistence_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.DBPersistenceSettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (amqp settings)")
+                session.close()
+                return False
+        session.close()
+        return False
+
+
+    def get_dbprocess_settings_by_id(self, id=1):
+        session = self.Session()
+        settings = session.query(model.DBProcessSettings).filter_by(id=id).first()
+        session.close()
+        if settings:
+            return modelToClass.toDBProcess_Settings([settings])[0]
+        return None
+    
+    def update_dbprocess_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.DBProcessSettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (amqp settings)")
+                session.close()
+                return False
+        session.close()
+        return False
+
+    def get_dbbi_settings_by_id(self, id=1):
+        session = self.Session()
+        settings = session.query(model.DBBISettings).filter_by(id=id).first()
+        session.close()
+        if settings:
+            return modelToClass.toDBBI_Settings([settings])[0]
+        return None
+    
+    def update_dbbi_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.DBBISettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (amqp settings)")
+                session.close()
+                return False
+        session.close()
+        return False
+        
+
+    def get_orchestrator_settings_by_id(self, id=1):
+        session = self.Session()
+        settings = session.query(model.OrchestratorSettings).filter_by(id=id).first()
+        session.close()
+        if settings:
+            return modelToClass.toOrchestrator_Settings([settings])[0]
+        return None
+    
+    def update_orchestrator_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.OrchestratorSettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (orchestrator settings)")
+                session.close()
+                return False
+        session.close()
+        return False
+
+
+
+    def get_process_settings_by_id(self, id):
+        session = self.Session()
+        settings = session.query(model.ProcessSettings).filter_by(id=id).first()
+        session.close()
+        if settings:
+            return modelToClass.toProcess_Settings([settings])[0]
+        return None
+    
+    def update_process_settings(self, id, new_parameters):
+        session = self.Session()
+        exists = session.query(model.ProcessSettings).filter_by(id=id).first()
+        if exists:
+            try: 
+                for (key, value) in new_parameters.items():
+                    setattr(exists, key, value)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo "+key+" o el valor es erroneo (process settings)")
+                session.close()
+                return False
+        session.close()
+        return False
 
     def read_process_dynamic(self, filter=None, value=None):
         session = self.Session()

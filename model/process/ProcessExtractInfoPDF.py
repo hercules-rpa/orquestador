@@ -37,7 +37,8 @@ class ProcessExtractInfoPDF(ProcessCommand):
             paths            = self.parameters['paths']
             nif_universidad  = self.parameters['nif_universidad']
             solicitudes      = self.parameters['solicitudes']
-            keywords         = ['referencia','proyecto','referencia proyecto']
+            #keywords         = ['referencia','proyecto','referencia proyecto']
+            keywords         = self.parameters['keywords']
             keys_solicitudes = [*solicitudes.keys()]
             value_search     = nif_universidad+keys_solicitudes
             names = [*solicitudes.items()]
@@ -69,7 +70,7 @@ class ProcessExtractInfoPDF(ProcessCommand):
                     self.log.completed = 50
                     self.update_log("Procedemos a exportar el dataframe a Excel",True)
                     try:
-                        fichero, investigadores_desconocidos = self.to_excel(name_file, value_search, solicitudes, pages_set, dfs, self.parameters['keywords'])
+                        fichero, investigadores_desconocidos = self.to_excel(name_file, value_search, solicitudes, pages_set, dfs, keywords)
                     except Exception as e:
                         self.log.state = "ERROR"
                         self.log.completed = 100

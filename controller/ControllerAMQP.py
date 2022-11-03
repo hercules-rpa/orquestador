@@ -1,9 +1,5 @@
 import asyncio
-import uuid
-from threading import Thread
 from aio_pika import ExchangeType, connect_robust, Message, DeliveryMode, IncomingMessage, exceptions
-import sys, os
-from multiprocessing import Process
 
 class Singleton(type):
     _instances = {}
@@ -17,7 +13,7 @@ class ControllerAMQP(metaclass=Singleton):
         self.user           = user
         self.password       = password
         self.host           = host
-        self.port           = port
+        self.port           = str(port)
         self.subscriptions  = subscriptions
         self.exchange_name  = exchange_name
         self.queue_name     = queue_name
@@ -82,7 +78,6 @@ class ControllerAMQP(metaclass=Singleton):
             connection_send =  await connect_robust(
                 "amqp://"+self.user+":"+self.password+"@"+self.host+":"+self.port+"/", loop=None
             )
-            
             
             channel_send =  await connection_send.channel()    # type: aio_pika.Channel
             exchange_send = await channel_send.declare_exchange(

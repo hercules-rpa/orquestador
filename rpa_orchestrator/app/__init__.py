@@ -6,6 +6,10 @@ from rpa_orchestrator.app.common.error_handling import ObjectNotFound, AppErrorB
 from flask_cors import CORS
 from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import Middleware
 from flask_jwt_extended import JWTManager
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from flask_apispec.extension import FlaskApiSpec
+
 
 DIRECTORY_RESOURCES = 'rpa_orchestrator/app/orchestrator/api_v1_0/resources/*.py'
 
@@ -25,6 +29,19 @@ def create_app(settings_module):
     Api(app, catch_all_404s=True)
     # Deshabilita el modo estricto de acabado de una URL con /
     app.url_map.strict_slashes = False
+
+    #Inicializamos Swagger
+    app.config.update({
+    'APISPEC_SPEC': APISpec(
+        title='Proyecto Hércules-RPA',
+        version='v1',
+        plugins=[MarshmallowPlugin()],
+        openapi_version='2.0.0'
+    ),
+    'APISPEC_SWAGGER_URL': '/swagger/',  # URI to access API Doc JSON 
+    'APISPEC_SWAGGER_UI_URL': '/swagger-ui/'  # URI to access UI of API Doc
+    })
+    docs = FlaskApiSpec(app)
     
     # Registra los blueprints
     import glob 
@@ -36,6 +53,10 @@ def create_app(settings_module):
         print(module)
         load_module = importlib.import_module(module)
         app.register_blueprint(load_module.getBlueprint())
+        print('NAME BP: '+load_module.getBlueprint().name)
+        if('getDocInfo' in dir(load_module)):
+            for di in load_module.getDocInfo():
+                docs.register(di.doc_class,blueprint = di.doc_blueprint,endpoint = di.doc_endpoint)
         
     # Registra manejadores de errores personalizados
     register_error_handlers(app)
@@ -45,7 +66,12 @@ def create_app(settings_module):
 def register_error_handlers(app):
     @app.errorhandler(Exception)
     def handle_exception_error(e):
-        return jsonify({'msg': 'Internal server error'}), 500
+        headers = e.data.get("headers", None)
+        messages = e.data.get("messages", ["Invalid request."])
+        if headers:
+            return jsonify({"errors": messages}), e.code, headers
+        else:
+            return jsonify({"errors": messages}), e.code
     @app.errorhandler(405)
     def handle_405_error(e):
         return jsonify({'msg': 'Method not allowed'}), 405

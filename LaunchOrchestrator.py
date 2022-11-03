@@ -14,13 +14,26 @@ loop                = asyncio.get_event_loop()
 loop_consumer       = asyncio.get_event_loop()
 
 def robot_persistence():
-    Orchestrator().reload_robot()
+    try:
+        Orchestrator().reload_robot()
+    except Exception as e:
+        print(str(e))
+        print("Error al volcar la información de los robots a memoria")
+        
 
 def schedule_persistence():
-    Orchestrator().reload_schedule()
+    try:
+        Orchestrator().reload_schedule()
+    except Exception as e:
+        print(str(e))
+        print("Error al volcar la información de los procesos programados")
 
 def process_persistence():
-    Orchestrator().reload_process()
+    try:
+        Orchestrator().reload_process()
+    except Exception as e:
+        print(str(e))
+        print("Error al volcar la información de los procesos disponibles a memoria")
 
 
 if __name__ == "__main__":
@@ -45,29 +58,31 @@ if __name__ == "__main__":
     try:
         with open(file_path) as json_orch:
             config = json.load(json_orch)
-            json.loads(json.dumps(config['AMQP-SETTING']), object_hook=lambda d: ControllerAMQP(**d))
-            print("###     - ControllerAMQP.               OK                  ###")
             json.loads(json.dumps(config['DB-PERSISTENCE']), object_hook=lambda d: ControllerDBPersistence(**d))
             print("###     - DB-PERSISTENCE.               OK                  ###")
-            json.loads(json.dumps(config['DB-PROCESS']), object_hook=lambda d: ControllerDBProcess(**d))
-            print("###     - DB-PROCESS.                   OK                  ###")
-            json.loads(json.dumps(config['DB-BI']), object_hook=lambda d: ControllerDBBI(**d))
-            print("###     - DB-BI.                        OK                  ###")
-            json.loads(json.dumps(config['ORCHESTRATOR-SETTING']), object_hook=lambda d: Orchestrator(**d))
-            print("###     - Orchestrator.                 OK                  ###")
+
+        
+        process_setting         = ControllerDBPersistence().get_dbprocess_settings_by_id()
+        amqp_settings           = ControllerDBPersistence().get_amqp_settings_by_id()
+        dbi_settings            = ControllerDBPersistence().get_dbbi_settings_by_id()
+        orchestrator_settings   = ControllerDBPersistence().get_orchestrator_settings_by_id()
+        
+        json.loads(json.dumps(process_setting.__dict__), object_hook=lambda d: ControllerDBProcess(**d))
+        print("###     - DB-PROCESS.                   OK                  ###")
+        json.loads(json.dumps(dbi_settings.__dict__), object_hook=lambda d: ControllerDBBI(**d))
+        print("###     - DB-BI.                        OK                  ###")
+        json.loads(json.dumps(amqp_settings.__dict__), object_hook=lambda d: ControllerAMQP(**d))
+        print("###     - ControllerAMQP.               OK                  ###")
+        json.loads(json.dumps(orchestrator_settings.__dict__), object_hook=lambda d: Orchestrator(**d))
+        print("###     - Orchestrator.                 OK                  ###")
+        
     except Exception as e:
         print("###############################################################")
         print("###                       ERROR                             ###")
         print(str(e))
         print("###                ORQUESTADOR ERROR                        ###")
         print("###############################################################")
-
-
-
-
-
-
-
+        exit()
 
 
     ControllerAMQP().set_listener(Orchestrator())
@@ -76,9 +91,6 @@ if __name__ == "__main__":
     #loop_consumer.create_task esto estaba antes
     thread_orchestrator = Thread(target=Orchestrator().run)
     thread_orchestrator.start()
-
-
-
 
 
     #INICIALIZAMOS FLASK

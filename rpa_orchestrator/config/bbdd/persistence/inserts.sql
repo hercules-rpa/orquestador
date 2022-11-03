@@ -11,7 +11,7 @@ INSERT INTO public.PROCESS (id, class, name, requirements, description, visible,
     (16,'ProcessExtractAward', 'Proceso extracción de concesiones', '','Proceso para ver las solicitudes que han concedido.', true, true),
     (18,'ProcessSexenios', 'Proceso de generación de informe de un sexenio', '','Proceso que genera un informe de ayuda al investigador para preparar un sexenio.', true, true),
     (22,'ProcessAcreditaciones', 'Proceso de generación de informe de una acreditación', '','Proceso que genera un informe de ayuda al investigador para solicitar una acreditación de la ANECA.', true, true),
-    (25,'ProcessSistemaRecomendacion', 'Process Sistema de Recomendación', 'pandas','Proceso que llama al sistema de recomendación híbrido. (Filtro Colaborativo, Contenido y Grafo Colaboración).', true, false),
-    (26,'ProcessRecordatorioPerfil', 'Process Recordatorio Perfil', 'pandas','Proceso que manda un correo electrónico recordatorio para que los investigadores configuren su perfil.', true, false),
+    (25,'ProcessRecommendationSystem', 'Process Sistema de Recomendación', 'pandas numpy sklearn','Proceso que llama al sistema de recomendación híbrido. (Filtro Colaborativo, Contenido y Grafo Colaboración).', true, false),
+    (26,'ProcessProfileReminder', 'Process Recordatorio Perfil', 'pandas','Proceso que manda un correo electrónico recordatorio para que los investigadores configuren su perfil.', true, false);
     (97,'ProcessExecuteCommand', 'Process Execute Robot', '', 'Proceso para ejecutar comandos en la maquina donde se ejecuta el robot', false, false),
     (98,'ProcessRestartRobot', 'Process Restart Robot', '', 'Proceso que reinicia el robot en el que se ejecuta', false, false);

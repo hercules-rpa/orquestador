@@ -34,12 +34,13 @@ class ControllerDBPersistence(metaclass=Singleton):
         self.port = port
         self.database = database
         self.db = create_engine("postgresql://"+user +
-                                ":"+password+"@"+host+":"+port+"/"+database)
+                                ":"+password+"@"+host+":"+port+"/"+database,pool_size=50, max_overflow=0)
         self.base = declarative_base()
         self.Session = sessionmaker(self.db)
 
     def dump(self, objects):
         session = self.Session()
+        session.expire_on_commit = False
         for object in objects:
             ans = None
             if isinstance(object, Robot):

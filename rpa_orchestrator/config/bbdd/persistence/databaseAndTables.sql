@@ -1,12 +1,5 @@
 -- Database: rpa
-CREATE DATABASE rpa
-WITH
-ENCODING = 'UTF8'
---LC_COLLATE = 'en_US.utf8'
---LC_CTYPE = 'en_US.utf8'
-TABLESPACE = pg_default
-CONNECTION LIMIT = -1;
--- Database: rpa
+CREATE DATABASE rpa;
 \c rpa
 -- Tables
 CREATE TABLE public.ROBOT (id varchar(255) NOT NULL, name varchar(255) NOT NULL, ip_address varchar(255), address varchar(255), registrations varchar(255), mac varchar(255), python_version varchar(255), os varchar(255), features TEXT, connected timestamp NOT NULL, last_seen timestamp NOT NULL, created timestamp NOT NULL,  PRIMARY KEY (id));
@@ -47,7 +40,3 @@ CREATE INDEX LOG_idprocess ON LOG (id_process);
 CREATE INDEX LOG_idrobot ON LOG (id_robot);
 
 \! echo $(pwd)
-
-
-
---\i inserts.sql

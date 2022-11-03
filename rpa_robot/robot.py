@@ -1,6 +1,5 @@
 from datetime import datetime
 from getmac import get_mac_address as gma
-from rpa_robot.ControllerRobot import ControllerRobot
 import pkg_resources
 import platform
 import psutil

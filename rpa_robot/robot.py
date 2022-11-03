@@ -1,4 +1,12 @@
+from datetime import datetime
+from getmac import get_mac_address as gma
+from rpa_robot.ControllerRobot import ControllerRobot
+import pkg_resources
+import platform
+import psutil
+import uuid
 
+UUID = uuid.uuid1()
 class Robot():
 
     def __init__(self, id, name, address, registrations, ip_api='localhost', port_api=5000, frontend = None, online=False, connected=datetime.now().timestamp(), features=[pkg.key for pkg in pkg_resources.working_set], state="Iddle", process_running=None, process_list=[]):
@@ -10,7 +18,6 @@ class Robot():
         self.port_api = str(port_api)
         self.frontend = frontend
         self.ip_address = None
-        # "".join(c + ":" if i % 2 else c for i,c in enumerate(hex(get_mac())[2:].zfill(12)))[:-1]
         self.mac = gma()
         self.token = str(UUID)
         self.python_version = sys.version

@@ -11,8 +11,8 @@ DESCRIPTION     = "Proceso que envía una serie de mensajes a la salida estánda
 REQUIREMENTS    = []
 ID              = ProcessID.HOLA_MUNDO.value
 class ProcessHolaMundo(ProcessCommand):
-    def __init__(self,id_schedule, id_log, id_robot, priority, log_file_path, parameters = None):
-        ProcessCommand.__init__(self,ID,NAME, DESCRIPTION, REQUIREMENTS, id_schedule, id_log,id_robot, priority, log_file_path, parameters)
+    def __init__(self,id_schedule, id_log, id_robot, priority, log_file_path, parameters = None, ip_api = None, url_api = None):
+        ProcessCommand.__init__(self,ID,NAME, DESCRIPTION, REQUIREMENTS, id_schedule, id_log,id_robot, priority, log_file_path, parameters, ip_api, url_api)
         
         
     def execute(self):

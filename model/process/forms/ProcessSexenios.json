@@ -1,19 +1,8 @@
 [
    {
       "type":"text",
-      "name":"orcid",
-      "label":"Orcid"
-   },
-   {
-      "type":"text",
-      "name":"personaref",
-      "label":"PersonaRef"
-   },
-   {
-      "type":"text",
-      "name":"email",
-      "label":"Email",
-      "validation":"optional|email"
+      "name":"investigador",
+      "label":"Identificador de investigador(email,ORCID,personaRef)"
    },
    {
       "type":"select",

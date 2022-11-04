@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, ARRAY, Text, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -26,6 +26,8 @@ class Process(Base):
     name = Column(String(255), nullable=False)
     requirements = Column(String(255))
     description = Column(String(255), nullable=False)
+    visible = Column(Boolean, nullable=False)
+    setting = Column(Boolean, nullable=False)
 
 
 class Robot(Base):
@@ -76,13 +78,91 @@ class Log(Base):
     schedule = relationship('Schedule')
 
 class File(Base):
-    __tablename__ = 'file'
-    id = Column(Integer, primary_key=True, server_default=text("nextval('file_id_seq'::regclass)"))
+    __tablename__ = 'file_cdn'
+    id = Column(Integer, primary_key=True, server_default=text("nextval('file_cdn_id_seq'::regclass)"))
     name = Column(String(255), nullable=False)
-    absolute_path = Column(String(255), nullable=False)
-    directory = Column(String(255), nullable=False)
-    time = Column(DateTime)
+    url_cdn = Column(String(255), nullable=False)
 
+class GlobalSettings(Base):
+    __tablename__ = 'global_settings'
+    id = Column(Integer, primary_key=True, server_default=text("nextval('global_settings_id_seq'::regclass)"))
+    edma_host_sparql = Column(String(255), nullable=False)
+    edma_host_servicios = Column(String(255), nullable=False)
+    edma_port_sparql = Column(Integer, nullable=False)
+    sgi_user = Column(String(255),nullable=False)
+    sgi_password = Column(String(1000), nullable=False)
+    sgi_ip = Column(String(255), nullable=False)
+    sgi_port = Column(Integer, nullable=False)
+    database_ip = Column(String(255), nullable=False)
+    database_port = Column(Integer, nullable=False)
+    ftp_user = Column(String(255),nullable=False)
+    ftp_password = Column(String(1000), nullable=False)
+    ftp_port = Column(Integer, nullable=False)
+
+class AMQPSettings(Base):
+    __tablename__ = 'amqp_settings'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('amqp_settings_id_seq'::regclass)"))
+    user = Column(String(1000), nullable=False)
+    password = Column(String(1000), nullable=False)
+    host = Column(String(1000), nullable=False)
+    port = Column(Integer, nullable=False)
+    subscriptions = Column(ARRAY(Text()))
+    exchange_name = Column(String(100), nullable=False)
+    queue_name = Column(String(100), nullable=False)
+
+
+class DBPersistenceSettings(Base):
+    __tablename__ = 'dbpersistence_settings'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('dbpersistence_settings_id_seq'::regclass)"))
+    user = Column(String(1000), nullable=False)
+    password = Column(String(1000), nullable=False)
+    host = Column(String(100), nullable=False)
+    port = Column(Integer, nullable=False)
+    database = Column(String(100), nullable=False)
+
+class DBProcessSettings(Base):
+    __tablename__ = 'dbprocess_settings'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('dbprocess_settings_id_seq'::regclass)"))
+    user = Column(String(1000), nullable=False)
+    password = Column(String(1000), nullable=False)
+    host = Column(String(100), nullable=False)
+    port = Column(Integer, nullable=False)
+    database = Column(String(100), nullable=False)
+
+class DBBISettings(Base):
+    __tablename__ = 'dbbi_settings'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('dbbi_settings_id_seq'::regclass)"))
+    user = Column(String(1000), nullable=False)
+    password = Column(String(1000), nullable=False)
+    host = Column(String(100), nullable=False)
+    port = Column(Integer, nullable=False)
+    keyspace = Column(String(100), nullable=False)
+
+class OrchestratorSettings(Base):
+    __tablename__ = 'orchestrator_settings'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('orchestrator_settings_id_seq'::regclass)"))
+    id_orch = Column(String(1000), nullable=False)
+    name = Column(String(1000), nullable=False)
+    company = Column(String(1000), nullable=False)
+    pathlog_store = Column(String(1000), nullable=False)
+    cdn_url = Column(String(1000), nullable=False)
+
+class ProcessSettings(Base):
+    __tablename__ = 'process_settings'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('process_settings_id_seq'::regclass)"))
+    salaprensa_url = Column(String(255),nullable=False)
+    ucc_url = Column(String(255),nullable=False)
+    boe_url = Column(String(255),nullable=False)
+    bdns_url = Column(String(255),nullable=False)
+    bdns_search = Column(String(255),nullable=False)
+    europe_url = Column(String(255),nullable=False)
+    europe_link = Column(String(255),nullable=False)
 
 class RobotSchedule(Base):
     __tablename__ = 'robot_schedule'

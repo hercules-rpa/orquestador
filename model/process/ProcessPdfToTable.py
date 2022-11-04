@@ -34,6 +34,8 @@ class ProcessPdfToTable(ProcessCommand):
         self.update_log("Proceso de extracción de tablas PDF ha empezado",True)
         self.log.completed = 5
         self.result = None
+        if not os.path.exists(DIRECTORY_TEMP):
+            os.makedirs(DIRECTORY_TEMP)
         try:
             files          = self.parameters['files']
             excel       = self.parameters['excel']

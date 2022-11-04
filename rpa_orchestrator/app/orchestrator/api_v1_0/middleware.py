@@ -30,6 +30,10 @@ def validate_create_process(func):
             process       = request.get_json(force=True)['process']
         except:
             abort(406, description="Mala sintaxis JSON")
+
+        if process['id_process'] == 98 and not process['id_robot']:
+            abort(406, description = "id_robot requerido para este proceso")
+            
         for p in process_verify:
             if not p in process:
                 if p == 'exclude_robots':

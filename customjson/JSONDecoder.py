@@ -11,13 +11,14 @@ class JSONDecoder(json.JSONDecoder):
         from model.Log                       import Log
 
         if ("id" in obj.keys() and "online" in obj.keys() and "features" in obj.keys()):
-            robot =  Robot(id = obj['id'], name = obj['name'], address = obj['address'], registrations = obj['registrations'], online = obj['online'], connected = float(obj['connected']), features = obj['features'], state = obj['state'], process_running = obj['process_running'], process_list = obj['process_list'])
-            robot.process_pause = obj['process_pause']
-            robot.ip_address    = obj['ip_address']
-            robot.mac           = obj['mac']
-            robot.os            = obj['os']
-            robot.python_version = obj['python_version']
-            robot.performance   = obj['performance']
+            robot =  Robot(id = obj['id'], name = obj['name'], address = obj['address'], registrations = obj['registrations'],  ip_api = obj['ip_api'], port_api = obj['port_api'], frontend = obj['frontend'], online = obj['online'], connected = float(obj['connected']), features = obj['features'], state = obj['state'], process_running = obj['process_running'], process_list = obj['process_list'])
+            robot.process_pause     = obj['process_pause']
+            robot.ip_address        = obj['ip_address']
+            robot.mac               = obj['mac']
+            robot.os                = obj['os']
+            robot.python_version    = obj['python_version']
+            robot.performance       = obj['performance']
+            robot.token             = obj['token']
             return robot
 
         elif ("name" in obj.keys() and "requirements" in obj.keys() and "description" in obj.keys()):
@@ -33,7 +34,6 @@ class JSONDecoder(json.JSONDecoder):
             log.finished    = obj['finished']
             log.completed   = obj['completed']
             return log
-
 
         return obj
 

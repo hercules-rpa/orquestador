@@ -19,9 +19,9 @@ class ControllerDBProcess(metaclass=Singleton):
         self.user           = user
         self.password       = password
         self.host           = host
-        self.port           = port
+        self.port           = str(port)
         self.database       = database
-        self.db = create_engine("postgresql://"+user+":"+password+"@"+host+":"+port+"/"+database,pool_size=50, max_overflow=0)  
+        self.db = create_engine("postgresql://"+user+":"+password+"@"+host+":"+str(port)+"/"+database,pool_size=50, max_overflow=0)  
         self.base = declarative_base()
         self.Session = sessionmaker(self.db)
 
@@ -48,7 +48,6 @@ class ControllerDBProcess(metaclass=Singleton):
                     if not exists:
                         exists = session.query(model.Convocatoria).filter_by(id=object.id).first()
                     if exists:
-                        exists.basereguladoraid = object.basereguladoraid
                         exists.notificada = object.notificada
                         session.commit()
                         #session.refresh(object)
@@ -624,5 +623,4 @@ class ControllerDBProcess(metaclass=Singleton):
         except Exception as e:
             print("No se pudo eliminar el perfil del investigador "+str(id)+" "+str(e))
             session.close()
-            return False
-        
+            return False    

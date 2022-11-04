@@ -1,13 +1,10 @@
 from abc import ABC, abstractmethod
-import os
 import time
 from datetime import datetime, timedelta
-from urllib import response
 from model.Log import Log
 from enum import Enum
 import json
 import Utils
-import asyncio
 import requests
 
 
@@ -21,68 +18,36 @@ class Pstatus(Enum):
 
 class ProcessID(Enum):
     HOLA_MUNDO = 1
-    COMPOSE_TEST = 2
     SEND_MAIL = 3
-    SELENIUM_TSLA = 4
-    EXTRACT_TABLES = 5
-    DOWNLOAD_FILES = 6
-    EXTRACT_OFFER = 7
-    EXTRACT_RESULT = 8
-    EXTRACT_CONVOCATORIA = 9
-    EXTRACT_BASESREGULADORAS = 10
+    EXTRACT_CALLS = 9
+    EXTRACT_REGULATORY_BASES = 10
     EXTRACT_XML = 11
-    EXTRACT_NEWS = 12
-    GENERATETRANSFERREPORT = 13
+    EXTRACT_NEWS_TRANSFER_REPORT = 12
+    GENERATE_TRANSFER_REPORT = 13
     PDF_TO_TABLE = 14
     EXTRACT_INFO_PDF = 15
-    EXTRACT_CONCESION = 16
-    EXTRACT_ARTICLES = 17
-    SEXENIOS = 18
-    EXTRACT_PROJECTS_AND_CONTRACTS = 19
-    EXTRACT_ANNOUNCEMENTS = 20
-    EXTRACT_INVENCIONES = 21
-    ACREDITACIONES = 22
-    EXTRACT_THESIS = 23
-    EXTRACT_OTC = 24
+    EXTRACT_AWARD = 16
+    EXTRACT_ARTICLES_TRANSFER_REPORT = 17
+    GENERATE_SEXENIO = 18
+    EXTRACT_PROJECTS_AND_CONTRACTS_TRANSFER_REPORT = 19
+    EXTRACT_CALLS_TRANSFER_REPORT = 20
+    EXTRACT_INVENTIONS_TRANSFER_REPORT = 21
+    GENERATE_ACCREDITATION = 22
+    EXTRACT_THESIS_TRANSFER_REPORT = 23
+    EXTRACT_OTC_TRANSFER_REPORT = 24
     RECOMMENDATION = 25
-    COLLABORATIVE_FILTERING = 26
-    BASED_CONTENT = 27
-    GRAFO_COLABORACION = 28
-    MOTOR_HIBRIDO = 29
-    RECORDATORIO_PERFIL = 30
-    TRANVIA_DAILY = 99
-
-
-class ProcessClassName(Enum):
-    HOLA_MUNDO = "ProcessHolaMundo"
-    COMPOSE_TEST = "ProcessComposeTest"
-    SEND_MAIL = "ProcessSendMail"
-    SELENIUM_TSLA = "ProcessSeleniumTSLA"
-    EXTRACT_TABLES = "ProcessExtractTables"
-    DOWNLOAD_FILES = "ProcessDownload"
-    EXTRACT_OFFER = "ProcessExtractOffer"
-    EXTRACT_RESULT = "ProcessExtractResult"
-    EXTRACT_CONVOCATORIA = "ProcessExtractConvocatoria"
-    EXTRACT_BASESREGULADORAS = "ProcessExtractBasesReguladoras"
-    EXTRACT_XML = "ProcessExtractXml"
-    EXTRACT_NEWS = "ProcessExtractNews"
-    TRANVIA_DAILY = "ProcessTranviaDaily"
-    EXTRACT_CONCESION = "ProcessExtractConcesion"
-    GENERATETRANSFERREPORT = "ProcessGenerateTransferReport"
-    PDF_TO_TABLE = "ProcessPdfToTable"
-    EXTRACT_INFO_PDF = "ProcessExtractInfoPDF"
-    EXTRACT_ARTICLES = "ProcessExtractArticles"
-    SEXENIOS = "ProcessSexenios"
-    ACREDITACIONES = "ProcessAcreditaciones"
-    EXTRACT_PROJECTS_AND_CONTRACTS = "ProcessExtractProjectsAndContracts"
-    EXTRACT_ANNOUNCEMENTS = "ProcessExtractAnnouncements"
-    EXTRACT_INVENCIONES = "ProcessExtractInvenciones"
-    EXTRACT_THESIS = "ProcessExtractThesis"
-    RECOMMENDATION = "ProcessSistemaRecomendacion"
+    COLLABORATIVE_FILTERING = 27
+    BASED_CONTENT = 28
+    COLLABORATIVE_GRAPH = 29
+    HYBRID_ENGINE = 30
+    REMINDER_PROFILE = 26
+    EXECUTE_COMMAND = 97
+    RESTART_ROBOT = 98
 
 
 class ProcessCommand(ABC):
-    def __init__(self, id, name, requirements, description, id_schedule, id_log, id_robot, priority, log_file_path, parameters):
+    def __init__(self, id, name, requirements, description, id_schedule, id_log, id_robot, priority, log_file_path, parameters, 
+    ip_api=None, port_api=None):
         self.name = name
         self.requirements = requirements
         self.description = description
@@ -93,6 +58,8 @@ class ProcessCommand(ABC):
         self.state = Pstatus.INITIALIZED
         self.priority = priority
         self.parameters = parameters
+        self.ip_api = ip_api
+        self.port_api = port_api      
         self.result = None
 
     def add_log_listener(self, listener):
@@ -102,7 +69,7 @@ class ProcessCommand(ABC):
         self.log.add_data_listener(listener)
 
     def update_log(self, data, timestamp=False):
-        if(timestamp is True):
+        if (timestamp is True):
             self.log.update_log("["+Utils.time_to_str(time.time())+"]" +
                                 " Process"+str(self.id)+"@robot:"+self.id_robot+" "+data+"\n")
         else:
@@ -113,34 +80,38 @@ class ProcessCommand(ABC):
                         self.name+" id_process = "+str(self.id)+")\n", False)
 
     def format_date(self, str_date, format_start, format_end) -> str:
+        """
+        Método encargado de formatear una fecha
+        :param str_date fecha en formato str
+        :param format_start formato de la fecha original
+        :param format_end formado de la fecha que se desea
+        :return str fecha formateada
+        """
         result: str = ''
         try:
             result = datetime.strptime(
                 str_date, format_start).strftime(format_end)
         except:
-            self.notificar_actualizacion('ERROR: conversión errónea: format_date: ' + str_date +
-                                         ' formato_entrada: ' + format_start + ' formato salida: ' + format_end)
+            self.notify_update('ERROR: conversión errónea: format_date: ' + str_date +
+                               ' formato_entrada: ' + format_start + ' formato salida: ' + format_end)
 
         return result
 
-    def notificar_actualizacion(self, msg):
+    def notify_update(self, msg):
+        """
+        Método encargado de notificar un mensaje por pantalla e insertarlo en el log
+        :param msg mensaje a insertar
+        """
         self.update_log(msg, True)
-
-    def format_date_process(self, fecha: datetime):
-        result: str
-        if fecha.day < 10:
-            result = '0' + str(fecha.day) + '/'
-        else:
-            result = str(fecha.day) + '/'
-        if fecha.month < 10:
-            result += '0' + str(fecha.month) + '/'
-        else:
-            result += str(fecha.month) + '/'
-        result += str(fecha.year)
-
-        return result
+        print(msg)
 
     def update_elements(self, elements: list, url: str, notificada: bool):
+        """
+        Método que realiza la actualización de un elemento en base de datos
+        :param elements lista de elementos
+        :param url dirección url para realizar la actualización
+        :param notificada True si el elemento ha sido notificado y False si no.
+        """
         if elements:
             payload = json.dumps(
                 {
@@ -150,22 +121,25 @@ class ProcessCommand(ABC):
             headers = {
                 'Content-Type': 'application/json'
             }
+            if url:
+                if not url.endswith('/'):
+                    url = url + '/'
 
-            if not url.endswith('/'):
-                url = url + '/'
-
-            for element in elements:
-                requests.patch(url + str(element.id),
-                               headers=headers, data=payload)
+                for element in elements:
+                    requests.patch(url + str(element.id),
+                                headers=headers, data=payload)
+            else:
+                print('ERROR no ha sido posible persistir la colección de elementos')
 
     def calculate_dates(self):
         """
         Método que calcula el rango de fechas en base a los parámetros de entrada del proceso.
+        :return tuple tupla donde el primer elemento es la fecha de inicio y el segundo la fecha de fin
         """
         start_date: datetime = None
         end_date: datetime = None
         try:
-            self.notificar_actualizacion(
+            self.notify_update(
                 'Obteniendo el rango de fechas en base a los parámetros de entrada del proceso.')
             if 'period' in self.parameters:
                 period = self.parameters['period']
@@ -174,37 +148,29 @@ class ProcessCommand(ABC):
             else:
                 if 'start_date' in self.parameters:
                     date1 = self.parameters['start_date']
+                    print(date1)
                     start_date = datetime.strptime(date1, "%Y-%m-%d")
                 else:
                     start_date = datetime.now()
 
                 if 'end_date' in self.parameters:
                     date1 = self.parameters['end_date']
+                    print(date1)
                     end_date = datetime.strptime(date1, "%Y-%m-%d")
                 else:
                     end_date = datetime.now()
 
-            self.notificar_actualizacion(
+            self.notify_update(
                 'Rango de fechas obtenido correctamente.')
 
         except Exception as e:
             print(e)
-            self.notificar_actualizacion(
+            self.notify_update(
                 'ERROR en el cálculo del rango de fechas.')
             self.log.state = "ERROR"
 
         return (start_date, end_date)
-
-    def ping(self, host):
-        """
-        response = os.system("ping -c 1 " + host)    
-        if response == 0:
-            return True
-        else:
-            return True
-        """
-        return True
-
+        
     @abstractmethod
     def execute(self):
         pass

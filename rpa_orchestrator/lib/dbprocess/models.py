@@ -35,12 +35,9 @@ class Convocatoria(Base):
     area_tematica = Column(String(1000))
     observaciones = Column(String(5000))
     id_sgi = Column(String(100))
-    basereguladoraid = Column(ForeignKey('basereguladora.id'))
     notificada = Column(Boolean)
     unidad_gestion = Column(String(1000))
     modelo_ejecucion = Column(String(1000))
-
-    basereguladora = relationship('Basereguladora')
 
 class Solicitud(Base):
     __tablename__ = 'solicitud'

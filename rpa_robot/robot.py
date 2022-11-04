@@ -7,6 +7,7 @@ from model.interfaces.ListenerLog import ListenerLog
 from model.interfaces.ListenerProcess import ListenerProcess
 from customjson.JSONEncoder import JSONEncoder
 from getmac import get_mac_address as gma
+from rpa_robot.ControllerRobot import ControllerRobot
 import model.messages as messages
 import importlib
 import asyncio
@@ -17,22 +18,28 @@ import platform
 import requests
 import psutil
 import time
+import uuid
 from uuid import getnode as get_mac
+import traceback
 
 TIME_WAIT_INIT = 60
 TIME_KEEP_ALIVE = 60
-
+UUID = uuid.uuid1()
 
 class Robot(ListenerMsg, ListenerLog, ListenerProcess):
 
-    def __init__(self, id, name, address, registrations, online=False, connected=datetime.now().timestamp(), features=[pkg.key for pkg in pkg_resources.working_set], state="Iddle", process_running=None, process_list=[]):
+    def __init__(self, id, name, address, registrations, ip_api='localhost', port_api=5000, frontend = None, online=False, connected=datetime.now().timestamp(), features=[pkg.key for pkg in pkg_resources.working_set], state="Iddle", process_running=None, process_list=[]):
         self.id = str(id)
         self.name = str(name)
         self.address = str(address)
         self.registrations = str(registrations)
+        self.ip_api = str(ip_api)
+        self.port_api = str(port_api)
+        self.frontend = frontend
         self.ip_address = None
         # "".join(c + ":" if i % 2 else c for i,c in enumerate(hex(get_mac())[2:].zfill(12)))[:-1]
         self.mac = gma()
+        self.token = str(UUID)
         self.python_version = sys.version
         self.online = online
         self.connected = connected
@@ -45,15 +52,24 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         # Procesos pendientes, cuando se vaya a ejecutar uno lo quitamos de esta lista y lo pasamos a process_running
         self.process_list = process_list
         self.process_pause = []
+        
+        ControllerRobot(self)
 
     def __instance_process(self, process_dict):
         # hacer algo en este caso para hacerlo robusto, enviar error proceso al orquestador. COMPROBAR SI EL ORQUESTADOR CONOCE ESE PROCESO, Y SI SE VERIFICA PEDIR QUE ACTUALICE EL REPOSITORIO AL ROBOT
-        module = importlib.import_module(
-            messages.ROUTE_MODULE_PROCESS+process_dict['classname'])
-        class_ = getattr(module, process_dict['classname'])
-        instance = class_(process_dict['id_schedule'], process_dict['id_log'], process_dict['id_robot'],
-                          process_dict['priority'], process_dict['log_file'], process_dict['parameters'])
-        return instance
+        try:
+            module = importlib.import_module(
+                messages.ROUTE_MODULE_PROCESS+process_dict['classname'])
+            class_ = getattr(module, process_dict['classname'])
+            instance = class_(process_dict['id_schedule'], process_dict['id_log'], process_dict['id_robot'],
+                            process_dict['priority'], process_dict['log_file'], process_dict['parameters'],
+                            self.ip_api, self.port_api)
+            return instance
+        except Exception as e:
+            print("El proceso no ha podido ser instanciado")
+            print(traceback.format_exc())
+            print(str(e))
+            return None
 
     def __execute_process(self, process):
         self.state = "RUNNING "+process.name
@@ -177,16 +193,21 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
 
     async def handle_msgStartOrch(self, mgs):
         print("Orquestador conectado")
+        await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_INIT_ROBOT, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
         await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_KEEP_ALIVE, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
 
     async def handle_msgReqExecProcess(self, msg):
         process = msg['PROCESS']
         process_instance = self.__instance_process(process)
-        print("El robot almacena el proceso: ", process_instance.name,
-              ' en la cola, tiene prioridad: ', process_instance.priority)
-        self.process_list.append(process_instance)
-        self.process_list.sort(key=self.__sort_by_priority)
-        await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_PENDING_PROCESS, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
+        if process_instance:
+            print("El robot almacena el proceso: ", process_instance.name,
+                ' en la cola, tiene prioridad: ', process_instance.priority)
+            self.process_list.append(process_instance)
+            self.process_list.sort(key=self.__sort_by_priority)
+            await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_PENDING_PROCESS, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
+        else:
+            print("El robot elimina el proceso")
+            await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_UPDATE_INFO, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
 
     async def handle_msgUpdateInfo(self, msg):
         await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_UPDATE_INFO, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
@@ -222,7 +243,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         if(self.ip_address == None):
             try:
                 self.ip_address = requests.get(
-                    'http://'+controller().host+':5000/api/orchestrator/getip').json()['ip']
+                    'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').json()['ip']
             except:
                 print("Connection exception")
         asyncio.run(self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(
@@ -236,7 +257,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
                 if(self.ip_address == None):
                     try:
                         self.ip_address = requests.get(
-                            'http://'+controller().host+':5000/api/orchestrator/getip').json()['ip']
+                            'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').json()['ip']
                     except:
                         print("Connection exception")
                 print("sending init")

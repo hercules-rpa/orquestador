@@ -1,0 +1,52 @@
+[
+   {
+      "type":"checkbox",
+      "name":"fc_activo",
+      "label":"Filtro colaborativo activo",
+      "checked":true,
+      "value": true
+      
+   },
+   {
+     "type": "text",
+     "name": "fc_peso",
+     "label": "Filtro colaborativo peso",
+     "value": "0.7"
+   },
+   {
+      "type":"checkbox",
+      "name":"sr_activo",
+      "label":"Sistema de Recomendación contenido",
+      "value": true,
+      "checked":true
+   },
+   {
+     "type": "text",
+     "name": "sr_peso",
+     "label": "Sistema de Recomendación  peso",
+     "value": "0.2"
+   },
+   {
+      "type":"checkbox",
+      "name":"gc_activo",
+      "label":"Grafo de colaboración",
+      "checked":true,
+      "value": true
+   },
+   {
+     "type": "text",
+     "name": "gc_peso",
+     "label": "Grafo de colaboración peso",
+     "value": "0.1"
+   },
+   {
+      "type": "text",
+      "name": "threshold_score",
+      "label": "Peso notificación",
+      "value": "0.38"
+   },
+   {
+      "type":"submit",
+      "label":"Ejecutar"
+   }
+]

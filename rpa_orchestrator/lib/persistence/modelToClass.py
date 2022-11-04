@@ -1,4 +1,13 @@
 from datetime import datetime
+
+from model.OrchestratorSettings import OrchestratorSettings
+from model.DBBISettings import DBBISettings
+from model.DBProcessSettings import DBProcessSettings
+from model.DBPersistenceSettings import DBPersistenceSettings
+from model.AMQPSettings import AMQPSettings
+from model.GlobalSettings import GlobalSettings
+from model.ProcessSettings import ProcessSettings
+
 from model.Event import MSG_TYPE
 from rpa_orchestrator.lib.ScheduleProcess import ScheduleProcess
 from rpa_robot.robot           import Robot
@@ -60,9 +69,59 @@ def toEvent(events_db):
 def toFile(files_db):
     files = []
     for f in files_db:
-        file = File(id=f.id, name=f.name, absolute_path=f.absolute_path, directory=f.directory, time=datetime.fromisoformat(str(f.time)))
+        file = File(id=f.id, name=f.name, url_cdn=f.url_cdn)
         files.append(file)
     return files
+
+def toGlobal_Settings(global_settings_db):
+    global_settings = []
+    for i in global_settings_db:
+        gs = GlobalSettings(edma_host_sparql=i.edma_host_sparql,edma_host_servicios=i.edma_host_servicios,edma_port_sparql=i.edma_port_sparql,sgi_user=i.sgi_user,sgi_password=i.sgi_password,sgi_ip=i.sgi_ip,sgi_port=i.sgi_port,datbase_ip=i.database_ip,database_port=i.database_port,ftp_user=i.ftp_user,ftp_password=i.ftp_password, ftp_port=i.ftp_port)
+        global_settings.append(gs)
+    return global_settings
+
+
+def toAMQP_Settings(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = AMQPSettings(username=i.user,password=i.password,host=i.host,port=i.port,subscriptions=i.subscriptions,exchange_name=i.exchange_name,queue_name=i.queue_name)
+        settings.append(gs)
+    return settings
+
+def toDBPersistence_Settings(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = DBPersistenceSettings(username=i.user,password=i.password,host=i.host,port=i.port,database=i.database)
+        settings.append(gs)
+    return settings
+
+def toDBProcess_Settings(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = DBProcessSettings(username=i.user,password=i.password,host=i.host,port=i.port,database=i.database)
+        settings.append(gs)
+    return settings
+
+def toDBBI_Settings(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = DBBISettings(username=i.user,password=i.password,host=i.host,port=i.port,keyspace=i.keyspace)
+        settings.append(gs)
+    return settings
+
+def toOrchestrator_Settings(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = OrchestratorSettings(id_orch=i.id_orch,name=i.name,company=i.company,pathlog_store=i.pathlog_store,cdn_url=i.cdn_url)
+        settings.append(gs)
+    return settings
+
+def toProcess_Settings(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = ProcessSettings(salaprensa_url=i.salaprensa_url,ucc_url=i.ucc_url,boe_url=i.boe_url,bdns_url=i.bdns_url,bdns_search=i.bdns_search,europe_url=i.europe_url, europe_link=i.europe_link)
+        settings.append(gs)
+    return settings
 
 def toProcess(process_db):
     process = []
@@ -73,6 +132,8 @@ def toProcess(process_db):
         p_dict['name'] = p.name
         p_dict['requirements'] = p.requirements.split()
         p_dict['description'] = p.description
+        p_dict['visible'] = p.visible
+        p_dict['setting'] = p.setting
         process.append(p_dict)
     return process
 

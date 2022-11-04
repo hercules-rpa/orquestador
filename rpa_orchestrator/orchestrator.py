@@ -1,6 +1,17 @@
 import asyncio
 import json
+import traceback
 from logging import Handler
+
+from model.GlobalSettings import GlobalSettings
+from model.OrchestratorSettings import OrchestratorSettings
+from model.DBBISettings import DBBISettings
+from model.DBProcessSettings import DBProcessSettings
+from model.DBPersistenceSettings import DBPersistenceSettings
+from model.AMQPSettings import AMQPSettings
+from model.ProcessSettings import ProcessSettings
+
+
 import rpa_orchestrator.lib.Schedule as schedule
 from model.File import File
 import rpa_orchestrator.lib.persistence.dbcon as db
@@ -36,7 +47,7 @@ class Singleton(type):
 
 
 class Orchestrator(ListenerMsg, metaclass=Singleton):
-    def __init__(self, id, name, company, pathlog_store):
+    def __init__(self, id, name, company, pathlog_store, cdn_url):
         self.controller = ControllerAMQP()
         self.robot_list = {}
         self.schedule_list = []  # lista de ejecuciones planificadas.
@@ -46,8 +57,9 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         self.name = name
         self.company = company
         self.pathlog_store = pathlog_store
-        self.lock = Lock()  # Comprobar si es necesario
-        self.process = {}  # TODO
+        self.cdn_url = cdn_url
+        self.lock = Lock()
+        self.process = {}
         self.db = db.ControllerDBPersistence()
         self.dbbi = dbbi.ControllerDBBI()
 
@@ -80,9 +92,6 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
     def restart(self):
         # TODO
         pass
-
-    def get_host(self):
-        return self.controller.host
 
     async def notify_msg(self, msg):
         await self.handle_msg(msg)
@@ -129,10 +138,14 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
                           " se ha reconectado. ", msgtype=MSG_TYPE.CONNECTION)
             self.db.dump([robot, event])
             self.event_list.append(event)
-        self.robot_list[robot.id] = (robot, datetime.now())
-        self.dbbi.dump_robot_performance(
-            robot, self.id, self.name, self.company)
-        print("Keep Alive ", robot.id, datetime.now())
+        if robot.id in self.robot_list and self.robot_list[robot.id][0].token == robot.token and self.robot_list[robot.id][0].online:
+            event = Event(body="Robot "+robot.name +
+                          " ha mandado Keep Alive. ", msgtype=MSG_TYPE.CONNECTION)
+            self.robot_list[robot.id] = (robot, datetime.now())
+            self.dbbi.dump_robot_performance(
+                robot, self.id, self.name, self.company)
+            self.db.dump([event])
+            print("Keep Alive ", robot.id, datetime.now())
 
     async def handle_msgExecProcess(self, msg):
         robot = JSONDecoder().decode(json.dumps(msg['ROBOT']))
@@ -203,6 +216,9 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
     async def send_resume_robot(self, id_robot):
         await self.__send_message(messages.ROUTE_ROBOT+id_robot, json.dumps(messages.MSG_RESUME_ROBOT))
 
+    def send_restart_robot(self, id_robot):
+        resp = asyncio.run(self.__send_message(messages.ROUTE_ROBOT+id_robot, json.dumps(messages.MSG_RESTART_ROBOT)))
+
     async def __send_process_json(self, id_schedule, id_robot, process_json):
         process_json = json.loads(process_json)
         if(not id_robot):
@@ -268,8 +284,9 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
                     self.schedule_list.remove(schedule_process)
 
             except Exception as e:
-                print("No schedule, quiza no cargado en memoria todavia")
+                print("Ha llegado un log de un proceso ya terminado y eliminado.")
                 print(str(e))
+                print(traceback.format_exc())
             finally:
                 self.lock.release()
 
@@ -279,7 +296,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
             schedule_process = next(
                 x for x in self.schedule_list if x.id == id_schedule)
             id_robot, id_log = await self.__send_process_json(schedule_process.id, schedule_process.id_robot, process_json)
-            schedule_process.id_robot_temp = id_robot  # TESTEANDO
+            schedule_process.id_robot_temp = id_robot
             schedule_job = schedule.get_jobs(id_schedule)[0]
             if not id_robot and not id_log:
                 event = Event(body="El proceso "+self.get_process_name_by_id(schedule_process.get_processid()) +
@@ -391,6 +408,17 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         if str(id_process) in self.process:
             return self.process[str(id_process)]['description']
         return None
+    
+    def get_process_visible_by_id(self, id_process):
+        if str(id_process) in self.process:
+            return self.process[str(id_process)]['visible']
+        return None
+    
+    
+    def get_process_setting_by_id(self, id_process):
+        if str(id_process) in self.process:
+            return self.process[str(id_process)]['setting']
+        return None
 
     def get_log(self, id_log=None):
         import rpa_orchestrator.lib.messagesjson.logjson as logjson
@@ -452,6 +480,65 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
     def get_file(self, id_file=None) -> File:
         file = self.db.read_files(id_file)
         return file
+    
+    def get_global_settings(self) -> GlobalSettings:
+        global_settings = self.db.read_global_settings()
+        return global_settings
+
+    def get_global_settings_by_id(self,id) -> GlobalSettings:
+        global_settings = self.db.get_global_settings_by_id(id)
+        return global_settings
+
+    def update_global_settings(self,id,new_parameters):
+        return self.db.update_global_settings(id,new_parameters)
+
+    def get_amqp_settings_by_id(self,id) -> AMQPSettings:
+        amqp_settings = self.db.get_amqp_settings_by_id(id)
+        return amqp_settings
+
+    def update_amqp_settings(self,id,new_parameters):
+        return self.db.update_amqp_settings(id,new_parameters)    
+
+    def get_dbpersistence_settings_by_id(self,id) -> DBPersistenceSettings:
+        dbpersistence_settings = self.db.get_dbpersistence_settings_by_id(id)
+        return dbpersistence_settings
+
+    def update_dbpersistence_settings(self,id,new_parameters):
+        return self.db.update_dbpersistence_settings(id,new_parameters)   
+    
+    def get_dbprocess_settings_by_id(self,id) -> DBProcessSettings:
+        dbprocess_settings = self.db.get_dbprocess_settings_by_id(id)
+        return dbprocess_settings
+
+    def update_dbprocess_settings(self,id,new_parameters):
+        return self.db.update_dbprocess_settings(id,new_parameters)
+
+    def get_dbbi_settings_by_id(self,id) -> DBBISettings:
+        dbbi_settings = self.db.get_dbbi_settings_by_id(id)
+        return dbbi_settings
+
+    def update_dbbi_settings(self,id,new_parameters):
+        return self.db.update_dbbi_settings(id,new_parameters)
+
+    def get_orchestrator_settings_by_id(self,id) -> OrchestratorSettings:
+        orchestrator_settings = self.db.get_orchestrator_settings_by_id(id)
+        return orchestrator_settings
+
+    def update_orchestrator_settings(self,id,new_parameters):
+        return self.db.update_orchestrator_settings(id,new_parameters)
+
+    def get_process_settings_by_id(self,id) -> ProcessSettings:
+        process_settings = self.db.get_process_settings_by_id(id)
+        return process_settings
+
+    def update_process_settings(self,id,new_parameters):
+        return self.db.update_process_settings(id,new_parameters)
+
+    def is_token_valid(self, id_robot, token):
+        if id_robot in self.robot_list and self.robot_list[id_robot][0].token == token:
+            return True
+        return False
+
 
     def get_main_stats(self):
         import rpa_orchestrator.lib.messagesjson.statsjson as stats
@@ -490,9 +577,10 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         event[0].read = True
         self.db.dump(event)
         return True
-
+        
     def add_file(self, file):
         self.db.dump([file])
+
 
     def add_process(self, process_json):
         self.lock.acquire()

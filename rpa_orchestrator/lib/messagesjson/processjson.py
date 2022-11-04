@@ -15,6 +15,8 @@ def get_process(id_process) -> json:
             process['process_description']  = orch.get_process_description_by_id(id_process)
             process['required']             = orch.get_process_requirements_by_id(id_process)
             process['capable_robots']       = orch.get_capable_robots(process)
+            process['visible']              = orch.get_process_visible_by_id(id_process)
+            process['setting']              = orch.get_process_setting_by_id(id_process)
             return json.dumps(process)
         return None
     else:

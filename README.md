@@ -93,3 +93,8 @@ Es necesario un servidor HTTP donde realizar peticiones para la subida de ficher
 https://github.com/hercules-rpa/despliegue-k8s/blob/main/rpa-helm-umu/templates/configmap-cdn.yaml
 
 
+## Ejecución
+
+Una vez instalado todo para la ejecución del orquestador simplemente haremos:
+
+`python LaunchOrchestrator.py orchestrator.json`

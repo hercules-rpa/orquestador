@@ -29,10 +29,23 @@ El orquestador necesitará los siguientes servicios:
 
 En el la carpeta principal del proyecto encontramos el archivo requierements.txt que será necesario para la funcionalidad del orquestador:
 
-     `pip install -r requierements.txt`
+ `pip install -r requierements.txt`
+
+Por otro lado, debemos establecer la configuración del robot indicandole donde se encuentra la base de datos y el acceso, para ello debemos modificar el fichero orchestrator.json que se encuentra rpa_orchestrator/config/orchestrator.json
+
+    `{
+    "DB-PERSISTENCE":{
+        "user": "postgres",
+        "password": "docker",
+        "host": "127.0.0.1",
+        "port":"5432",
+        "database": "rpa"
+        }
+    }`
 
 
 Por último, debemos crear /var/log/orchestrator y asignale permisos para que el orquestador deposite los logs. También se guardarán en la base de datos de postgres y cassandraa.
+
 
 
 #### RabbitMQ

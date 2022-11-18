@@ -1,8 +1,9 @@
 
 import json
-import requests
+from model.RPA import RPA
 from model.EDMA import EDMA
 from model.SGI import SGI
+from rpa_robot.ControllerRobot import ControllerRobot
 
 class Singleton(type):
     _instances = {}
@@ -14,8 +15,9 @@ class Singleton(type):
         return cls._instances[cls]
 
 
+
 class ControllerSettings(metaclass=Singleton):
-    
+    cr = ControllerRobot()
     def get_globals_settings(self, ip_api:str, port_api:str):
         """
         Método que obtiene los parámetros de configuración globales.
@@ -26,9 +28,7 @@ class ControllerSettings(metaclass=Singleton):
         result = None
         if ip_api and port_api:
             url = 'http://'+ip_api+':'+port_api+'/api/orchestrator/global_settings'
-            headers={}
-            data={}
-            response = requests.get(url, headers=headers, data=data)
+            response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:
                 result = response.text
         return result
@@ -47,6 +47,16 @@ class ControllerSettings(metaclass=Singleton):
                 return (str(dict['database_ip']), str(dict['database_port']))
         return None
 
+    def get_url_upload_cdn(self, ip_api, port_api) -> str:
+        result = None
+        if ip_api and port_api:
+            response = RPA(self.cr.robot.token).get('http://'+ip_api+':'+port_api+'/api/orchestrator/cdn/url')
+            if response and response.status_code == 200:
+                dict = json.loads(response.text)
+                if dict:
+                    result = dict['url_upload_cdn']
+        return result
+
 
     def get_process_settings(self, ip_api, port_api):
         """
@@ -58,9 +68,7 @@ class ControllerSettings(metaclass=Singleton):
         result = None
         if ip_api and port_api:
             url = 'http://'+ip_api+':'+port_api+'/api/orchestrator/process_settings'
-            headers={}
-            data={}
-            response = requests.get(url, headers=headers, data=data)
+            response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:
                 result = json.loads(response.text)
         return result

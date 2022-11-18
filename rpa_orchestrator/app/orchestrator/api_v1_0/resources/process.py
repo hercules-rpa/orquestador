@@ -10,6 +10,7 @@ from flask_apispec                      import marshal_with,doc, use_kwargs
 from flask_apispec.views                import MethodResource
 from model.DocInfo                      import DocInfo
 from rpa_orchestrator.app.orchestrator.api_v1_0.resources.log import LogSchema
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 orch = Orchestrator()
 
 process_v1_0_bp = Blueprint('process_v1_0_bp', __name__)
@@ -62,7 +63,7 @@ class TimeScheduleSchema(Schema):
     Clase esquema con el tiempo que se necesita para agendar un proceso.
     """
     every = fields.Raw()
-    at = fields.Float(allow_none=True,missing=True)
+    at = fields.Raw(allow_none=True,missing=True)
     forever = fields.Bool()
     tag = fields.Str()
     category = fields.Str()
@@ -83,27 +84,40 @@ class ProcessSchedulePostSchema(Schema):
     process = fields.Nested(ProcessPostSchema)
 
 class ProcessListResource(MethodResource, Resource):
+    @token_required
     @doc(description='Muestra la lista de procesos disponibles', tags=['Process'])
     @marshal_with(ProcessSchema(many=True))
     def get(self):
         """
         Método que devuelve la lista de procesos que hay disponibles.
         """
-        return Response(orch.get_process(),mimetype='application/json')
+        filter = None
+        if request.args.get("visible") is not None:
+            filter = request.args.get("visible") in ['true','True']
+        
+        data = orch.get_process(visible=filter)
+        return Response(data,mimetype='application/json')
+
 
 class ProcessResource(MethodResource, Resource):
+    @token_required
     @doc(description='Muestra las características del proceso dado', tags=['Process'])
     @marshal_with(ProcessSchema)
     def get(self,process_id):
         """
         Método que devuelve la información de un proceso en concreto.
         """
-        resp = orch.get_process(process_id)
-        if resp is None:
-            abort(404, description="Resource not found")
-        return Response(resp,mimetype='application/json')
+        filter = None
+        if request.args.get("visible") is not None:
+            filter = request.args.get("visible") in ['true','True']
+        data = orch.get_process(process_id, visible=filter)
+        if data:
+            return Response(data,mimetype='application/json')
+        else:
+            return Response("Resource not found",status=404,  mimetype='application/json')
 
 class ProcessResourceForm(MethodResource, Resource):
+    @token_required
     @doc(description='Muestra los formularios necesarios del proceso pasado por parámetro.', tags=['Process'])
     def get(self,process_id):
         """
@@ -115,6 +129,7 @@ class ProcessResourceForm(MethodResource, Resource):
         return Response(json.dumps(resp),mimetype='application/json')
 
 class ScheduleResource(MethodResource, Resource):
+    @token_required
     @doc(description='Muestra las características del proceso dado', tags=['Process'])
     @marshal_with(ProcessScheduleSchema)
     def get(self,schedule_id):
@@ -126,6 +141,7 @@ class ScheduleResource(MethodResource, Resource):
             abort(404, description="Resource not found")
         return Response(resp,mimetype='application/json')
     
+    @token_required
     @doc(description='Borra un proceso agendado para una marca de tiempo.', tags=['Process'])
     @marshal_with(ProcessScheduleSchema)
     def delete(self, schedule_id, **kwargs):
@@ -138,6 +154,7 @@ class ScheduleResource(MethodResource, Resource):
             return Response(resp,status=200,  mimetype='application/json')
         abort(404, description={"status": "ERROR", "schedule_id": schedule_id, "description":"Error removing process"})
     
+    @token_required
     @doc(description='Muestra las características del proceso dado', tags=['Process'])
     @marshal_with(ProcessScheduleSchema)
     @validate_edit_process
@@ -145,16 +162,17 @@ class ScheduleResource(MethodResource, Resource):
         """
         Método para editar un proceso agendado para una marca de tiempo.
         """
+        print("hola1")
         time_schedule = request.get_json(force=True)['time_schedule']
         process = request.get_json(force=True)['process']        
         if not "exclude_robots" in process:
             process['exclude_robots'] = []
-
+        print("hola2")
         process_json = {
             "time_schedule":time_schedule,
             "process":process
         }
-
+        print("hola3")
         if not orch.set_schedule(schedule_id, json.dumps(process_json)):
             abort(400, description={"status": "ERROR", "schedule_id": schedule_id, "description":"Error editing schedule"})
 
@@ -162,6 +180,7 @@ class ScheduleResource(MethodResource, Resource):
         return Response(resp, status=201, mimetype='application/json')
 
 class ScheduleExecuteResource(MethodResource,Resource):   
+    @token_required
     @doc(description='Establecer un proceso para que se ejecute en una marca de tiempo', tags=['Process'])
     @use_kwargs(ProcessSchedulePostSchema, location=('json'))
     @marshal_with(ProcessReceiveSchema)
@@ -170,10 +189,9 @@ class ScheduleExecuteResource(MethodResource,Resource):
         """
         Método para establecer un proceso en una marca de tiempo determinada.
         """
-        print("PROCESO")
         time_schedule = request.get_json(force=True)['time_schedule']
         process = request.get_json(force=True)['process']
-        print(time_schedule)
+
         if not "exclude_robots" in process:
             process['exclude_robots'] = []
 
@@ -181,7 +199,7 @@ class ScheduleExecuteResource(MethodResource,Resource):
             "time_schedule":time_schedule,
             "process":process
         }
-
+        
         id_schedule = orch.add_process(json.dumps(process_json))
         if id_schedule is None:
             abort(400, description="Error creando proceso. Mal formado el schedule, robot offline o no existe")
@@ -190,6 +208,7 @@ class ScheduleExecuteResource(MethodResource,Resource):
         return Response(resp, status=201, mimetype='application/json')
 
 class ScheduleListFilterResource(MethodResource, Resource):
+    @token_required
     @doc(description='Muestra todos los procesos que han sido agendados.', tags=['Process'])
     @marshal_with(ProcessScheduleSchema)
     def get(self):
@@ -207,6 +226,7 @@ class ScheduleListFilterResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
         
 class ScheduleListResource(MethodResource, Resource):
+    @token_required
     def get(self):
         resp = orch.get_all_schedules()
         if not resp:
@@ -214,6 +234,7 @@ class ScheduleListResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
 
 class ScheduleLogResource(MethodResource, Resource):
+    @token_required
     @doc(description='Muestra todos los logs de un proceso que han sido agendado.', tags=['Process'])
     @marshal_with(LogSchema(many=True))
     def get(self,schedule_id):
@@ -223,6 +244,7 @@ class ScheduleLogResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
 
 class ScheduleRobotResource(MethodResource, Resource):
+    @token_required
     @doc(description='Borra un proceso agendado para una marca de tiempo en un robot concreto.', tags=['Process'])
     @marshal_with(ProcessReceiveSchema)
     def delete(self,robot_id, schedule_id):

@@ -1,0 +1,23 @@
+{
+    "AMQP-SETTING":{
+        "user":             "admin",
+        "password":         "rpa123",
+        "host":             "10.208.99.12",
+        "port":             "5672",
+        "subscriptions":    ["rpa.robot.robotEdu","rpa.robot.general"],
+        "exchange_name":    "rpa",
+        "queue_name":       "robotEdu"
+    },
+
+    "ROBOT-SETTING":{
+        "id":         "robotEdu",
+        "name":       "Edu",
+        "address":          "Murcia",
+        "registrations":    "zulo",
+        "ip_api": "10.208.99.12",
+        "port_api":        "5000",
+        "frontend":        "http://rpa.hercules.com"
+    }
+
+
+}

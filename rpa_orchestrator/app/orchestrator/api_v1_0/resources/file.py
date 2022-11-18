@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from marshmallow import Schema, fields
 from flask_apispec import marshal_with,doc, use_kwargs
 from flask_apispec.views import MethodResource
-
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 
 UPLOAD_FOLDER = 'epic_orchestrator/files/'
 orch = Orchestrator()
@@ -36,7 +36,7 @@ class URLCDNSchema(Schema):
     """
     Clase esquema que representa la URL del CDN.
     """
-    url_cdn = fields.Str()
+    url_upload_cdn = fields.Str()
 
 class FileListResponseSchema(Schema):
     """
@@ -53,6 +53,7 @@ class FileRequestSchema(Schema):
 
 
 class FilesResource(MethodResource,Resource):
+    @token_required
     @doc(description='Obtiene el listado de los ficheros del sistema', tags=['Files'])
     @marshal_with(FileSchema(many=True))  # marshalling with marshmallow library
     def get(self):
@@ -71,7 +72,7 @@ class FilesResource(MethodResource,Resource):
             result.append(resp)
         return Response(json.dumps(result), status=200, mimetype='application/json')
 
-
+    @token_required
     @doc(description='Notificación de fichero nuevo desde el CDN', tags=['Files'])
     @use_kwargs(FileRequestSchema, location=('json'))
     @marshal_with(FileSchema)
@@ -95,6 +96,7 @@ class FilesResource(MethodResource,Resource):
             abort(404, description="Error no information file was found")
 
 class FileResource(MethodResource,Resource):
+    @token_required
     @doc(description='Información de fichero', tags=['Files'],params={'file_id': 
             {
                 'description': 'id del fichero',
@@ -123,14 +125,16 @@ class FileResource(MethodResource,Resource):
         
 class CDNURLResource(MethodResource,Resource):
     #HACER EL DELETE
+    @token_required
     @doc(description='Obtención de la URL del CDN', tags=['Files'])
     @marshal_with(URLCDNSchema)  # marshalling with marshmallow library 
     def get(self):
         '''
         Método para obtener la URL del CDN actual del sistema
         '''
+        global_settings = orch.get_global_settings_by_id(id = 1)
         resp = {}
-        resp['cdn_url'] = CDN_URL
+        resp['url_upload_cdn'] = global_settings.__dict__.copy()['url_upload_cdn']
         return Response(json.dumps(resp), status=200, mimetype='application/json')
 
 def getDocInfo():

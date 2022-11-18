@@ -10,6 +10,7 @@ CREATE TABLE public.EVENT (id SERIAL, body varchar(255) NOT NULL, msgtype varcha
 CREATE TABLE public.FILE (id SERIAL, name varchar(255) NOT NULL, absolute_path varchar(255) NOT NULL, url varchar(255), directory varchar(255) NOT NULL, time timestamp NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.FILE_CDN (id SERIAL, name varchar(255) NOT NULL, url_cdn varchar(255));
 CREATE TABLE public.ROBOT_SCHEDULE (Robotid varchar(255) NOT NULL, Scheduleid int4 NOT NULL, PRIMARY KEY (Robotid, Scheduleid));
+CREATE TABLE public.USERS (username varchar(255) NOT NULL, password varchar(255) NOT NULL, token varchar(1024), PRIMARY KEY (username));
 
 -- SETTINGS
 CREATE TABLE public.AMQP_SETTINGS (id int4 NOT NULL, "user" varchar(255) NOT NULL,password varchar(255) NOT NULL, host varchar(255) NOT NULL, port int8 NOT NULL,subscriptions text[], exchange_name varchar(255) NOT NULL, queue_name varchar(255) NOT NULL, PRIMARY KEY (id));
@@ -17,7 +18,7 @@ CREATE TABLE public.DBPROCESS_SETTINGS (id int4 NOT NULL, "user" varchar(255) NO
 CREATE TABLE public.DBBI_SETTINGS (id int4 NOT NULL, "user" varchar(255) NOT NULL,password varchar(255) NOT NULL, host varchar(255) NOT NULL, port int8 NOT NULL,keyspace varchar(255) NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.ORCHESTRATOR_SETTINGS (id int4 NOT NULL, id_orch varchar(1000) NOT NULL,name varchar(1000) NOT NULL,company varchar(1000) NOT NULL, pathlog_store varchar(1000) NOT NULL, cdn_url varchar(1000) NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.PROCESS_SETTINGS (id int4 NOT NULL, salaprensa_url varchar(1024) NOT NULL,ucc_url varchar(1024) NOT NULL,boe_url varchar(1024) NOT NULL, bdns_url varchar(1024) NOT NULL, bdns_search varchar(1024) NOT NULL, europe_url varchar(1024) NOT NULL, europe_link varchar(1024) NOT NULL, PRIMARY KEY (id));
-CREATE TABLE public.GLOBAL_SETTINGS (id int4 NOT NULL, edma_host_sparql varchar(255) NOT NULL,edma_host_servicios varchar(255) NOT NULL,edma_port_sparql bigint NOT NULL, sgi_ip varchar(255) NOT NULL,sgi_port bigint NOT NULL,database_ip varchar(255) NOT NULL,database_port bigint NOT NULL,sgi_user varchar(255),sgi_password varchar(1024),ftp_user varchar(255),ftp_password varchar(1024), ftp_port int4,PRIMARY KEY (id));
+CREATE TABLE public.GLOBAL_SETTINGS (id int4 NOT NULL, edma_host_sparql varchar(255) NOT NULL,edma_host_servicios varchar(255) NOT NULL,edma_port_sparql bigint NOT NULL, sgi_ip varchar(255) NOT NULL,sgi_port bigint NOT NULL,database_ip varchar(255) NOT NULL,database_port bigint NOT NULL,sgi_user varchar(255),sgi_password varchar(1024), url_upload_cdn varchar(1024) NOT NULL, url_release varchar(1024) NOT NULL, PRIMARY KEY (id));
 
 
 -- Relation
@@ -40,3 +41,7 @@ CREATE INDEX LOG_idprocess ON LOG (id_process);
 CREATE INDEX LOG_idrobot ON LOG (id_robot);
 
 \! echo $(pwd)
+
+
+
+--\i inserts.sql

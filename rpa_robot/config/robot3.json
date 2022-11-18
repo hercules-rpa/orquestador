@@ -1,0 +1,23 @@
+{
+    "AMQP-SETTING":{
+        "user":             "guest",
+        "password":         "guest",
+        "host":             "localhost",
+        "port":             "5672",
+        "subscriptions":    ["rpa.robot.robot3","rpa.robot.general"],
+        "exchange_name":    "rpa",
+        "queue_name":       "robot3"
+    },
+
+    "ROBOT-SETTING":{
+        "id":               "robot3",
+        "name":             "RobotTestJose",
+        "address":          "Murcia",
+        "registrations":    "Ronda Sur",
+        "ip_api": "localhost",
+        "port_api":        "5000",
+        "frontend":        "http://rpa.hercules.com"
+    }
+
+
+}

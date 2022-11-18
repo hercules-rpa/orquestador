@@ -5,7 +5,7 @@ import uuid
 
 from flask_apispec import MethodResource, doc, marshal_with, use_kwargs
 from marshmallow import Schema
-
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 import werkzeug
 from flask                              import request, Blueprint, abort, send_from_directory
 from flask.wrappers                     import Response
@@ -44,18 +44,23 @@ class GlobalSettingsResourceSchema(Schema):
     sgi_port = fields.Int()
     database_ip = fields.Str()
     database_port = fields.Int()
-    ftp_user = fields.Str()
-    ftp_password = fields.Str()
+    url_upload_cdn = fields.Str()
+    url_release = fields.Str()
 
 class GlobalSettingsResource(MethodResource,Resource):
+    @token_required
     @doc(description='Obtener ajustes globales', tags=['Settings'])
     @marshal_with(GlobalSettingsResourceSchema)
     def get(self,id = 1):
         global_settings = orch.get_global_settings_by_id(id)
-        resp = {}
-        resp = global_settings.__dict__.copy()
-        return Response(json.dumps(resp), status=200, mimetype='application/json')
+        if global_settings:
+            resp = {}
+            resp = global_settings.__dict__.copy()
+            return Response(json.dumps(resp), status=200, mimetype='application/json')
+        else:
+            return Response(json.dumps({"msg":"No se ha podido recuperar los parámetros globales"}), status=404, mimetype='application/json') 
 
+    @token_required
     @doc(description='Modificar ajustes globales', tags=['Settings'])
     @use_kwargs(GlobalSettingsResourceSchema,
     location=('json'))
@@ -67,7 +72,7 @@ class GlobalSettingsResource(MethodResource,Resource):
                 del new_parameters[key]
         resp = orch.update_global_settings(id_settings, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar los ajustes globales con id "+str(id_settings))
+            return Response(json.dumps({"msg":"Error intentado actualizar los ajustes globales con id "+str(id_settings)}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "global_settings": id_settings, "descripcion":"Ajustes actualizados"})
         return Response(resp,mimetype='application/json')
 

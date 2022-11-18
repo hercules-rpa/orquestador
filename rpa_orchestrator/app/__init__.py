@@ -9,7 +9,7 @@ from flask_jwt_extended import JWTManager
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask_apispec.extension import FlaskApiSpec
-
+import uuid
 
 DIRECTORY_RESOURCES = 'rpa_orchestrator/app/orchestrator/api_v1_0/resources/*.py'
 
@@ -18,7 +18,7 @@ def create_app(settings_module):
     app = Flask(__name__)
     CORS(app)
     app.config.from_object(settings_module)
-    app.config['JWT_SECRET_KEY']='cca3b969dc408d3efe378ca42a076345'
+    app.config['JWT_SECRET_KEY'] = str(uuid.uuid1())
     app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     jwt = JWTManager(app)
     # Inicializa las extensiones

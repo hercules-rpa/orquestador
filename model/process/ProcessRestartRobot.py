@@ -5,7 +5,11 @@ from model.process.ProcessCommand import ProcessCommand
 from model.process.ProcessCommand import ProcessID
 import os
 import time
-import model.ftpclient as ftpclient
+import wget
+import zipfile
+import tempfile
+import shutil
+import cp
 from rpa_robot.ControllerSettings import ControllerSettings
 
 NAME            = "Restart Robot"
@@ -23,23 +27,50 @@ class ProcessRestartRobot(ProcessCommand):
         self.log.state = "OK"
         start = time.time()
         self.log.start_log(start)
-        if self.parameters['update'] == True:
+        if self.parameters['update']:
+            self.update_log("Se procede a actualizar el robot",True)
             cs = ControllerSettings()
             settings_response = cs.get_globals_settings(self.ip_api, self.port_api)
             if settings_response:
                 settings = json.loads(settings_response)
-                if not ftpclient.update(self, self.ip_api, settings['ftp_port'], settings['ftp_user'], settings['ftp_password']):
+                if self.update_code(settings['url_release']):
                     self.update_log("Update Process Complete", True)
-                    print("Update Process Complete")
                 else: 
                     self.update_log("Update Process Failed", True)
-                    print("Update Process Failed")
 
-        self.update_log("Se obtiene la lina de comando con la que se ejecutó el robot y se reinicia",True)
+        self.update_log("Se procede al reinicio del robot y se reinicia",True)
         end_time = time.time()
         self.state = pstatus.FINISHED
         self.log.end_log(end_time)
         os.execv(sys.executable, ['python3'] + sys.argv)
+
+    def update_code(self, url):
+        name_file = wget.download(url, out=tempfile.gettempdir())
+        if name_file:
+            try:
+                with zipfile.ZipFile(os.path.join(tempfile.gettempdir(), name_file), 'r') as zip_ref:
+                    zip_ref.extractall(tempfile.gettempdir())
+            except:
+                os.remove(os.path.join(tempfile.gettempdir(), name_file))
+                self.update_log("Problemas al descomprimir el archivo en el directorio temporal. Borramos archivos temporales", True)
+                return False
+            self.update_log("Se ha extraído en: " + os.path.join(tempfile.gettempdir(), name_file), True)
+            try:
+                currentdir = os.path.dirname(os.path.realpath(__file__))
+                cp.cp(os.path.join(os.path.join(tempfile.gettempdir(), name_file.split(".zip")[0]), "model"), os.path.join(os.path.dirname(os.path.dirname(currentdir)), "model"), force=True)
+                self.update_log("Copiados los ficheros desde el directorio " + os.path.join(os.path.join(tempfile.gettempdir(), name_file.split(".zip")[0]), "model") + " a " + os.path.join(os.path.dirname(os.path.dirname(currentdir)), "model"), True)
+            except:
+                os.remove(os.path.join(tempfile.gettempdir(), name_file))
+                shutil.rmtree(os.path.join(tempfile.gettempdir(), name_file.split(".zip")[0]))
+                self.update_log("Problemas al copiar los archivos descargados en el directorio del proyecto. Borramos archivos temporales",True)
+                return False
+            os.remove(os.path.join(tempfile.gettempdir(), name_file))
+            shutil.rmtree(os.path.join(tempfile.gettempdir(), name_file.split(".zip")[0]))
+            self.update_log("Se ha realizado la actualización correctamente. Borramos archivos temporales", True)
+            return True
+        else:
+            self.update_log("Problemas al descargar el archivo en el directorio temporal.",True)
+            return False
 
     def pause(self):
         pass

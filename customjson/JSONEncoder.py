@@ -17,9 +17,21 @@ class JSONEncoder(json.JSONEncoder):
             robot_dict['connected'] = str(robot_dict['connected'])
             return robot_dict
         elif isinstance(obj, ProcessCommand):
-            process_dict = copy.copy(obj.__dict__) #En caso de eliminar algún campo es necesario hacer un copy
-            #del process_dict['log']
-            return process_dict
+            process_dict = copy.copy(obj)
+            process_aux = {}
+            process_aux['name'] = process_dict.name
+            process_aux['requirements'] = process_dict.requirements
+            process_aux['description'] = process_dict.description
+            process_aux['id'] = process_dict.id
+            process_aux['id_robot'] = process_dict.id_robot
+            process_aux['log'] = process_dict.log
+            process_aux['state'] = process_dict.state
+            process_aux['priority'] = process_dict.priority
+            process_aux['parameters'] = process_dict.parameters
+            process_aux['ip_api'] = process_dict.ip_api
+            process_aux['port_api'] = process_dict.port_api
+            process_aux['result'] = process_dict.result
+            return process_aux
         elif isinstance(obj, Pstatus):
             return (str(obj).split("."))[1]
         elif isinstance(obj, ProcessID):

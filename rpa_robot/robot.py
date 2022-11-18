@@ -8,6 +8,7 @@ from model.interfaces.ListenerProcess import ListenerProcess
 from customjson.JSONEncoder import JSONEncoder
 from getmac import get_mac_address as gma
 from rpa_robot.ControllerRobot import ControllerRobot
+import requests
 import model.messages as messages
 import importlib
 import asyncio
@@ -15,7 +16,6 @@ import sys
 import json
 import pkg_resources
 import platform
-import requests
 import psutil
 import time
 import uuid
@@ -55,6 +55,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         
         ControllerRobot(self)
 
+        
     def __instance_process(self, process_dict):
         # hacer algo en este caso para hacerlo robusto, enviar error proceso al orquestador. COMPROBAR SI EL ORQUESTADOR CONOCE ESE PROCESO, Y SI SE VERIFICA PEDIR QUE ACTUALICE EL REPOSITORIO AL ROBOT
         try:
@@ -184,7 +185,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
             await self.handle_msgResumeRobot(msg)
         elif(type_msg == messages.UPDATE_INFO):
             await self.handle_msgUpdateInfo(msg)
-
+    
     async def handle_msgInit(self, msg):
         print("Conexion establecida")
         global time_keep
@@ -216,8 +217,8 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         self.pause()
 
     async def handle_msgResumeRobot(self, msg):
-        self.resume()
-
+        self.resume()        
+    
     async def handle_msgKillProcess(self, msg):
         id_schedule = msg['SCHEDULE']
         self.__remove_process(id_schedule)
@@ -242,22 +243,22 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         print("STARTING CONNECTION")
         if(self.ip_address == None):
             try:
-                self.ip_address = requests.get(
-                    'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').json()['ip']
+                self.ip_address = json.loads(requests.get(
+                    'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').text)['ip']
             except:
                 print("Connection exception")
         asyncio.run(self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(
             messages.MSG_INIT_ROBOT, **({"ROBOT": json.loads(JSONEncoder().encode(self))})))))
         while (play):
-            # Actualizamos cpu, ram, disk y features en tiempo real. Pensar si meterlo en otro sitio que se ejecute cada minuto o algo asi.
+            # Actualizamos cpu, ram, disk y features en tiempo real.
             self.performance = [psutil.cpu_percent(), psutil.virtual_memory(
             ).percent, psutil.disk_usage('/').percent]  # CPU, RAM, DISK
             self.features = [pkg.key for pkg in pkg_resources.working_set]
             if (not self.online and time_seconds >= TIME_WAIT_INIT):
                 if(self.ip_address == None):
                     try:
-                        self.ip_address = requests.get(
-                            'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').json()['ip']
+                        self.ip_address = json.loads(requests.get(
+                            'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').text)['ip']
                     except:
                         print("Connection exception")
                 print("sending init")

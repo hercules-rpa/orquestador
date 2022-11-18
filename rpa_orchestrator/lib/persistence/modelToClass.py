@@ -3,10 +3,10 @@ from datetime import datetime
 from model.OrchestratorSettings import OrchestratorSettings
 from model.DBBISettings import DBBISettings
 from model.DBProcessSettings import DBProcessSettings
-from model.DBPersistenceSettings import DBPersistenceSettings
 from model.AMQPSettings import AMQPSettings
 from model.GlobalSettings import GlobalSettings
 from model.ProcessSettings import ProcessSettings
+from model.User import User
 
 from model.Event import MSG_TYPE
 from rpa_orchestrator.lib.ScheduleProcess import ScheduleProcess
@@ -76,7 +76,7 @@ def toFile(files_db):
 def toGlobal_Settings(global_settings_db):
     global_settings = []
     for i in global_settings_db:
-        gs = GlobalSettings(edma_host_sparql=i.edma_host_sparql,edma_host_servicios=i.edma_host_servicios,edma_port_sparql=i.edma_port_sparql,sgi_user=i.sgi_user,sgi_password=i.sgi_password,sgi_ip=i.sgi_ip,sgi_port=i.sgi_port,datbase_ip=i.database_ip,database_port=i.database_port,ftp_user=i.ftp_user,ftp_password=i.ftp_password, ftp_port=i.ftp_port)
+        gs = GlobalSettings(edma_host_sparql=i.edma_host_sparql,edma_host_servicios=i.edma_host_servicios,edma_port_sparql=i.edma_port_sparql,sgi_user=i.sgi_user,sgi_password=i.sgi_password,sgi_ip=i.sgi_ip,sgi_port=i.sgi_port,datbase_ip=i.database_ip,database_port=i.database_port,url_upload_cdn=i.url_upload_cdn,url_release=i.url_release)
         global_settings.append(gs)
     return global_settings
 
@@ -85,13 +85,6 @@ def toAMQP_Settings(settings_db):
     settings = []
     for i in settings_db:
         gs = AMQPSettings(username=i.user,password=i.password,host=i.host,port=i.port,subscriptions=i.subscriptions,exchange_name=i.exchange_name,queue_name=i.queue_name)
-        settings.append(gs)
-    return settings
-
-def toDBPersistence_Settings(settings_db):
-    settings = []
-    for i in settings_db:
-        gs = DBPersistenceSettings(username=i.user,password=i.password,host=i.host,port=i.port,database=i.database)
         settings.append(gs)
     return settings
 
@@ -120,6 +113,13 @@ def toProcess_Settings(settings_db):
     settings = []
     for i in settings_db:
         gs = ProcessSettings(salaprensa_url=i.salaprensa_url,ucc_url=i.ucc_url,boe_url=i.boe_url,bdns_url=i.bdns_url,bdns_search=i.bdns_search,europe_url=i.europe_url, europe_link=i.europe_link)
+        settings.append(gs)
+    return settings
+
+def toUser(settings_db):
+    settings = []
+    for i in settings_db:
+        gs = User(username=i.username,password=i.password,token=i.token)
         settings.append(gs)
     return settings
 

@@ -6,6 +6,7 @@ from marshmallow                        import Schema, fields
 from flask_apispec                      import marshal_with,doc
 from flask_apispec.views                import MethodResource
 from model.DocInfo                      import DocInfo
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 
 orch = Orchestrator()
 
@@ -28,6 +29,7 @@ class StatisticsDashBoardSchema(Schema):
     process_completed = fields.Int()
 
 class MainStatisticsResource(MethodResource, Resource):
+    @token_required
     @doc(description='Obtener estadísticas principales para la página dashboard', tags=['StatsDashBoard'])
     @marshal_with(StatisticsDashBoardSchema)
     def get(self):

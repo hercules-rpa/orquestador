@@ -7,6 +7,7 @@ import json
 from marshmallow import Schema, fields
 from flask_apispec import marshal_with,doc, use_kwargs
 from flask_apispec.views import MethodResource
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 
 orch = Orchestrator()
 
@@ -40,6 +41,7 @@ def getBlueprint():
     return event_v1_0_bp
 
 class EventResource(MethodResource,Resource):
+    @token_required
     @doc(description='Get Eventos no leídos', tags=['Events'])
     @marshal_with(EventSchema(many=True))  # marshalling with marshmallow library
     def get(self):
@@ -53,6 +55,7 @@ class EventResource(MethodResource,Resource):
 
 
 class EventSetReadResource(MethodResource,Resource):    
+    @token_required
     @doc(description='Método para leer un evento', tags=['Events'])
     @marshal_with(EventSchema)  # marshalling with marshmallow library
     def post(self, event_id):

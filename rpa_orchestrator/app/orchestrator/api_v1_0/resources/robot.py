@@ -9,6 +9,7 @@ from flask_apispec                      import marshal_with,doc
 from flask_apispec.views                import MethodResource
 from model.DocInfo                      import DocInfo
 from rpa_orchestrator.app.orchestrator.api_v1_0.resources.log import LogSchema
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 
 orch = Orchestrator()
 robot_v1_0_bp = Blueprint('robot_v1_0_bp', __name__)
@@ -108,6 +109,7 @@ class RobotLogSchema(Schema):
 
 
 class RobotListResource(MethodResource, Resource):
+    @token_required
     @doc(description='Obtener lista de robots', tags=['Robot'])
     @marshal_with(RobotListResourceSchema(many=True))
     def get(self):
@@ -119,6 +121,7 @@ class RobotListResource(MethodResource, Resource):
         return result
 
 class RobotListProblemResource(MethodResource, Resource):
+    @token_required
     @doc(description='Obtener lista de problemas de todos los robots', tags=['Robot'])
     @marshal_with(ProblemResourceSchema(many=True))
     def get(self):
@@ -130,6 +133,7 @@ class RobotListProblemResource(MethodResource, Resource):
         return result
 
 class RobotResource(MethodResource, Resource):
+    @token_required
     @doc(description='Obtener datos y características de un robot', tags=['Robot'])
     @marshal_with(RobotResourceSchema)
     def get(self,robot_id):
@@ -137,13 +141,12 @@ class RobotResource(MethodResource, Resource):
         Método para recopilar los datos y características de un robot en concreto.
         """
         resp = orch.get_robot(robot_id)
-        print(robot_id)
-        print(resp)
         if resp is None:
             abort(404, description="Resource not found")
         return Response(resp,mimetype='application/json')
 
 class RobotProblemResource(MethodResource, Resource):
+    @token_required
     @doc(description='Obtener problemas notificados de un robot', tags=['Robot'])
     @marshal_with(ProblemResourceSchema(many=True))
     def get(self,robot_id):
@@ -156,6 +159,7 @@ class RobotProblemResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
 
 class RobotLogResource(MethodResource, Resource):
+    @token_required
     @doc(description='Obtener logs generados de un robot', tags=['Robot'])
     @marshal_with(RobotLogSchema(many=True))
     def get(self,robot_id):

@@ -6,10 +6,9 @@ from flask.wrappers                         import Response
 from flask_restful                          import Api, Resource
 from rpa_orchestrator.ControllerProcess    import ControllerProcess
 from rpa_orchestrator.orchestrator      import Orchestrator
-from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required, token_required_investigador
 import rpa_orchestrator.lib.dbprocess.models as model
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-import jsonify
 import datetime
 
 orch = Orchestrator()
@@ -21,6 +20,7 @@ def getBlueprint():
     return registerumu_v1_0_bp
 
 class Convocatoria(Resource):
+    @token_required
     def get(self, id_convocatoria = None):
         filter = {}
         if not id_convocatoria:
@@ -42,9 +42,9 @@ class Convocatoria(Resource):
             filter['id'] = id_convocatoria
         resp = cp.get_convocatoria(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
-
+    @token_required
     def post(self):
         convocatoria_list = json.dumps(request.get_json(force=True))
         try:
@@ -54,7 +54,7 @@ class Convocatoria(Resource):
             return Response(resp, status=201, mimetype='application/json')
         except Exception as e:
             abort(400, description=str(e))
-
+    @token_required
     def patch(self, id_convocatoria):
         new_parameters = request.get_json()
         black_list = ['id','fecha_creacion']
@@ -63,12 +63,13 @@ class Convocatoria(Resource):
                 del new_parameters[key]
         resp = cp.update_convocatoria(id_convocatoria, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la convocatoria con id "+str(id_convocatoria))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "convocatoria": id_convocatoria, "description":"Convocatoria Updated"})
         return Response(resp,mimetype='application/json')
 
 
 class Solicitud(Resource):
+    @token_required
     def get(self, id_solicitud = None):
         filter = {}
         if not id_solicitud:
@@ -89,9 +90,9 @@ class Solicitud(Resource):
             filter['id'] = id_solicitud
         resp = cp.get_solicitud(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
-    
+    @token_required
     def post(self):
         solicitud_list = json.dumps(request.get_json(force=True))
         try:
@@ -102,7 +103,7 @@ class Solicitud(Resource):
             return Response(resp, status=201, mimetype='application/json')
         except Exception as e:
             abort(400, description=str(e))
-
+    @token_required
     def patch(self, id_solicitud):
         new_parameters = request.get_json()
         black_list = ['id','fecha_creacion']
@@ -111,12 +112,13 @@ class Solicitud(Resource):
                 del new_parameters[key]
         resp = cp.update_solicitud(id_solicitud, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la solicitud con id "+str(id_solicitud))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Solicitud": id_solicitud, "description":"Solicitud Updated"})
         return Response(resp,mimetype='application/json')
 
 
 class Base_Reguladora(Resource):
+    @token_required
     def get(self, id_basereguladora = None):
         filter = {}
         if not id_basereguladora:
@@ -137,9 +139,10 @@ class Base_Reguladora(Resource):
             filter['id'] = id_basereguladora
         resp = cp.get_basereguladora(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
-    
+
+    @token_required
     def post(self):
         basereguladora_list = json.dumps(request.get_json(force=True))
         try:
@@ -150,6 +153,7 @@ class Base_Reguladora(Resource):
         except Exception as e:
             abort(400, description=str(e))
 
+    @token_required
     def patch(self, id_basereguladora):
         new_parameters = request.get_json()
         black_list = ['id','fecha_creacion']
@@ -158,11 +162,12 @@ class Base_Reguladora(Resource):
                 del new_parameters[key]
         resp = cp.update_basereguladora(id_basereguladora, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la base reguladora con id "+str(id_basereguladora))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Base Reguladora": id_basereguladora, "description":"Base Reguladora Updated"})
         return Response(resp,mimetype='application/json')
 
 class Ejecucion_Boletin(Resource):
+    @token_required
     def get(self, id_notificacion = None):
         filter = {}
         if not id_notificacion:
@@ -181,9 +186,10 @@ class Ejecucion_Boletin(Resource):
             filter['id'] = id_notificacion
         resp = cp.get_ejecucion_boletin(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
     
+    @token_required
     def post(self):
         notificacion_list = json.dumps(request.get_json(force=True))
         try:
@@ -194,6 +200,7 @@ class Ejecucion_Boletin(Resource):
         except Exception as e:
             abort(400, description=str(e))
 
+    @token_required
     def patch(self, id_notificacion):
         new_parameters = request.get_json()
         black_list = ['id','fecha_creacion']
@@ -202,19 +209,20 @@ class Ejecucion_Boletin(Resource):
                 del new_parameters[key]
         resp = cp.update_ejecucion_notificacion(id_notificacion, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la ejecucion del boletin con id "+str(id_notificacion))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Ejecucion_Boletin": id_notificacion, "description":"Ejecucion_Boletin Updated"})
         return Response(resp,mimetype='application/json')
 
 class Ultima_Ejecucion_Boletin(Resource):
+    @token_required
     def get(self):
         resp = cp.get_ejecucion_boletin_ultima()
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')  
 
-#Proceso 4
 class AreaTematica(Resource):
+    @token_required
     def get(self, id_areatematica = None):
         filter = {}
         if not id_areatematica:
@@ -234,9 +242,10 @@ class AreaTematica(Resource):
             resp = cp.get_areatematica_id(id_areatematica)
        
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
-    
+
+    @token_required
     def post(self):
         areatematica = request.get_json(force=True)
         
@@ -263,7 +272,7 @@ class AreaTematica(Resource):
         resp = json.dumps({"status": "ok", "id": areatematica.id, "description":"Area tematica Created"})
         return Response(resp, status=201, mimetype='application/json')
 
-
+    @token_required
     def patch(self, id_areatematica):
         new_parameters = request.get_json()
         black_list = ['id']
@@ -272,11 +281,12 @@ class AreaTematica(Resource):
                 del new_parameters[key]
         resp = cp.update_areatematica(id_areatematica, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar el area tematica con id "+str(id_areatematica))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Area tematica": id_areatematica, "description":"Area tematica Updated"})
         return Response(resp,mimetype='application/json')
 
 class Investigador(Resource):
+    @token_required
     def get(self, id_investigador = None):
         filter = {}
         if not id_investigador:
@@ -295,9 +305,10 @@ class Investigador(Resource):
             filter['id'] = id_investigador
         resp = cp.get_investigador(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
     
+    @token_required
     def post(self):
         investigadores = json.dumps(request.get_json(force=True))
         try:
@@ -310,6 +321,7 @@ class Investigador(Resource):
             print(str(e))
             abort(400, description=str(e))
 
+    @token_required
     def patch(self, id_investigador):
         new_parameters = request.get_json()
         black_list = ['id']
@@ -318,11 +330,12 @@ class Investigador(Resource):
                 del new_parameters[key]
         resp = cp.update_investigador(id_investigador, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar el investigador con id "+str(id_investigador))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Investigador": id_investigador, "description":"Investigador Updated"})
         return Response(resp,mimetype='application/json')
 
 class CalificacionArea(Resource):
+    @token_required
     def get(self, id_investigador = None):
         filter = {}
         if not id_investigador:
@@ -341,26 +354,16 @@ class CalificacionArea(Resource):
             filter['id'] = id_investigador
         resp = cp.get_calificacionArea(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
 
-    @token_required
+    @token_required_investigador
     def post(self):
         calificaciones = json.dumps(request.get_json(force=True))
         print(calificaciones)
         try:
-            calificaciones_inv = []
             idinv = get_jwt_identity()
-            for calificacion in json.loads(calificaciones):
-                del calificacion['nombre']
-                if calificacion['puntuacion'] > 5:
-                    calificacion['puntuacion'] = 5
-                elif calificacion['puntuacion'] < 1:
-                    calificacion['puntuacion'] = 1
-                calificacion['idinvestigador'] = idinv #añadido el idinvestigador
-                calificaciones_inv.append(calificacion)
-            calificaciones = json.loads( json.dumps(calificaciones_inv), object_hook=lambda d: model.Calificacionarea(**d))
-            
+            calificaciones = json.loads(json.dumps(cp.procesar_puntuaciones(idinv, json.loads(calificaciones))), object_hook=lambda d: model.Calificacionarea(**d))
             cp.dump(calificaciones)
             cp.calcular_puntuaciones_areas(calificaciones)
             resp = json.dumps({"status": "ok", "calificaciones": [x.id for x in calificaciones], "description":"Calificaciones Created"})
@@ -369,6 +372,7 @@ class CalificacionArea(Resource):
             print(e)
             return Response(json.dumps({"status": "ERROR", "message":"Error al calificar "+str(e)}), status = 400, mimetype='application/json')
 
+    @token_required_investigador
     def patch(self, id_calificacion):
         new_parameters = request.get_json()
         black_list = ['id']
@@ -377,16 +381,15 @@ class CalificacionArea(Resource):
                 del new_parameters[key]
         resp = cp.update_calificacionArea(id_calificacion, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la calificacion con id "+str(id_calificacion))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Calificacion": id_calificacion, "description":"Calificacion Updated"})
         return Response(resp,mimetype='application/json')
     
-    @token_required
+    @token_required_investigador
     def delete(self):
         load = request.args.get('load')
-        print(load)
+        load = load in ['True','true']
         idinv = get_jwt_identity()
-        print(idinv)
         if cp.delete_perfil(idinv):
             if load:
                 cp.cargar_perfil(idinv)
@@ -398,6 +401,7 @@ class CalificacionArea(Resource):
         
 
 class CalificacionConvocatoria(Resource):
+    @token_required
     def get(self, id_investigador = None):
         filter = {}
         if not id_investigador:
@@ -416,10 +420,10 @@ class CalificacionConvocatoria(Resource):
             filter['id'] = id_investigador
         resp = cp.get_calificacionConvocatoria(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
     
-    @token_required
+    @token_required_investigador
     def post(self):
         calificaciones = json.dumps(request.get_json(force=True))
         try:
@@ -430,6 +434,7 @@ class CalificacionConvocatoria(Resource):
         except Exception as e:
             abort(400, description=str(e))
 
+    @token_required
     def patch(self, id_calificacion):
         new_parameters = request.get_json()
         black_list = ['id']
@@ -438,11 +443,12 @@ class CalificacionConvocatoria(Resource):
                 del new_parameters[key]
         resp = cp.update_calificacionConvocatoria(id_calificacion, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la calificacion con id "+str(id_calificacion))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "Calificacion": id_calificacion, "description":"Calificacion Updated"})
         return Response(resp,mimetype='application/json')
 
 class NotificacionInvestigador(Resource):
+    @token_required
     def get(self, id_notInv = None):
         filter = {}
         if not id_notInv:
@@ -463,9 +469,10 @@ class NotificacionInvestigador(Resource):
             filter['id'] = id_notInv
         resp = cp.get_notificacionInvestigador(filter)
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
 
+    @token_required
     def post(self):
         notificacionesInv = json.dumps(request.get_json(force=True))
         try:
@@ -476,6 +483,7 @@ class NotificacionInvestigador(Resource):
         except Exception as e:
             return Response(json.dumps({"status":"error","message":str(e)}), status=400, mimetype='application/json')
 
+    @token_required
     def patch(self, id_notinv):
         new_parameters = request.get_json()
         black_list = ['id','fechaCreacion']
@@ -484,20 +492,20 @@ class NotificacionInvestigador(Resource):
                 del new_parameters[key]
         resp = cp.update_notificacionInvestigador(id_notinv, new_parameters)
         if not resp:
-            abort(404, description="Error intentado actualizar la notificacion con id "+str(id_notinv))
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         resp = json.dumps({"status": "ok", "notificacion": id_notinv, "description":"Notificacion Updated"})
         return Response(resp,mimetype='application/json')
 
 class NotificacionInvestigadorLast(Resource):
+    @token_required
     def get(self):
         resp = cp.get_notificacion_investigador_last()
         if not resp:
-            abort(404, description="Resource not found")
+            return Response(json.dumps({"msg": "Resource not found"}), status=404, mimetype='application/json')
         return Response(resp,mimetype='application/json')
 
 class FeedbackConvocatoria(Resource):
-    @token_required
-    @jwt_required()
+    @token_required_investigador
     def post(self, idconvocatoria, util):
         utilidad_c = {}
         utilidad_c['no'] = -0.25
@@ -515,7 +523,7 @@ class FeedbackConvocatoria(Resource):
 
 
 class Token(Resource):
-    
+    @token_required
     def post(self):
         """Generamos un token para el investigador teniendo como información el iduser, idrobot y el token amqp del robot"""
         user = request.json.get("iduser", None)
@@ -531,7 +539,7 @@ class Token(Resource):
         return Response(json.dumps(result),mimetype='application/json')
 
 class PerfilRecomendacion(Resource):
-    @token_required
+    @token_required_investigador
     def get(self):
         idinv = get_jwt_identity()
         filter = {}
@@ -540,7 +548,6 @@ class PerfilRecomendacion(Resource):
         return Response(result,mimetype='application/json')
 
 class InvestigadorPerfil(Resource):
-    #TODO Configurar seguridad
     def get(self):
         investigadores = cp.get_investigador()
         result = []
@@ -556,6 +563,7 @@ class InvestigadorPerfil(Resource):
         return Response(json.dumps(result),mimetype='application/json')
 
 class ProcessConfigResource(Resource):
+    @token_required
     def get(self):
         try:
             path = request.args.get("path")
@@ -570,7 +578,8 @@ class ProcessConfigResource(Resource):
             return Response(json.dumps({"status": "ERROR", "message":"No existe el configurador"}), status = 400, mimetype='application/json')
         except Exception as e:
             return Response(json.dumps({"status": "ERROR", "message":str(e)}), status = 400, mimetype='application/json')
-        
+    
+    @token_required
     def patch(self):
         try:
             path = request.args.get("path")
@@ -585,6 +594,7 @@ class ProcessConfigResource(Resource):
         except Exception as e:
             return Response(json.dumps({"status": "ERROR", "message": str(e)}), status = 400, mimetype='application/json')
         
+    @token_required
     def post(self):
         try:
             path = request.args.get("path")

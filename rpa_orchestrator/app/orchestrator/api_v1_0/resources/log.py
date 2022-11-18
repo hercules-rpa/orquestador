@@ -7,7 +7,7 @@ from rpa_orchestrator.orchestrator    import Orchestrator
 from marshmallow import Schema, fields
 from flask_apispec import marshal_with,doc, use_kwargs
 from flask_apispec.views import MethodResource
-
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 orch = Orchestrator()
 
 class LogSchema(Schema):
@@ -48,6 +48,7 @@ def isDocumented():
     return TRUE
 
 class LogListResource(MethodResource,Resource):
+    @token_required
     @doc(description='Get Log list', tags=['Logs'])
     @marshal_with(LogSchema(many=True))  # marshalling with marshmallow library
     def get(self):
@@ -57,6 +58,7 @@ class LogListResource(MethodResource,Resource):
         return Response(orch.get_log(),mimetype='application/json')
 
 class LogResource(MethodResource,Resource):
+    @token_required
     @doc(description='Get Log por id', tags=['Logs'],params={'log_id': 
             {
                 'description': 'id del log',

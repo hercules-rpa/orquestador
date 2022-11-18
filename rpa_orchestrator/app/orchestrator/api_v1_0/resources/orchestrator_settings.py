@@ -7,6 +7,7 @@ from model.DocInfo                         import DocInfo
 from marshmallow                           import Schema, fields
 from flask_apispec                         import marshal_with,doc, use_kwargs
 from flask_apispec.views                   import MethodResource
+from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 orch = Orchestrator()
 
 orchestrator_settings_v1_0_bp = Blueprint('orchestrator_settings_v1_0_bp', __name__)
@@ -69,6 +70,7 @@ class ProcessGeneralSettingsSchema(Schema):
     europe_link = fields.Str()
 
 class AMQPSettingsResource(MethodResource, Resource):
+    @token_required
     @doc(description='Mostrar configuraciones AMQP', tags=['Orch Settings'])
     @marshal_with(AMQPSettingsSchema)
     def get(self,id = 1):
@@ -80,6 +82,7 @@ class AMQPSettingsResource(MethodResource, Resource):
         resp = amqp_settings.__dict__.copy()
         return Response(json.dumps(resp), status=200, mimetype='application/json')
 
+    @token_required
     @doc(description='Cambio de un parámetro de AMQP', tags=['Orch Settings'])
     @use_kwargs(AMQPSettingsSchema, location=('json'))
     @marshal_with(AMQPSettingsSchema)
@@ -99,38 +102,8 @@ class AMQPSettingsResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
 
 
-class DBPersistenceResource(MethodResource, Resource):
-    @doc(description='Mostrar configuracion de persistencia DB', tags=['Orch Settings'])
-    @marshal_with(DBPersistenceSettingsSchema)
-    def get(self,id = 1):
-        """
-        Método para obtener la configuración de base de datos.
-        """
-        dbpersistence_settings = orch.get_dbpersistence_settings_by_id(id)
-        resp = {}
-        resp = dbpersistence_settings.__dict__.copy()
-        return Response(json.dumps(resp), status=200, mimetype='application/json')
-
-    @doc(description='Cambio de un parámetro de la persistencia DB', tags=['Orch Settings'])
-    @use_kwargs(DBPersistenceSettingsSchema, location=('json'))
-    @marshal_with(DBPersistenceSettingsSchema)
-    def patch(self, id_settings = 1):
-        """
-        Método para editar parámetros de la persistencia.
-        """
-        new_parameters = request.get_json()
-        black_list = ['id']
-        for key in black_list:
-            if key in new_parameters:
-                del new_parameters[key]
-        resp = orch.update_dbpersistence_settings(id_settings, new_parameters)
-        if not resp:
-            abort(404, description="Error intentado actualizar los ajustes globales con id "+str(id_settings))
-        resp = json.dumps({"status": "ok", "dbpersistence_settings": id_settings, "descripcion":"Ajustes DB PERSISTENCE actualizados"})
-        return Response(resp,mimetype='application/json')
-
-
 class DBProcessResource(MethodResource, Resource):
+    @token_required
     @doc(description='Mostrar las configuraciones de la persistencia de procesos', tags=['Orch Settings'])
     @marshal_with(DBPersistenceSettingsSchema)
     def get(self,id = 1):
@@ -142,6 +115,7 @@ class DBProcessResource(MethodResource, Resource):
         resp = dbprocess_settings.__dict__.copy()
         return Response(json.dumps(resp), status=200, mimetype='application/json')
 
+    @token_required
     @doc(description='Cambio de un parámetro de la persistencia de procesos', tags=['Orch Settings'])
     @use_kwargs(DBPersistenceSettingsSchema, location=('json'))
     @marshal_with(DBPersistenceSettingsSchema)
@@ -161,6 +135,7 @@ class DBProcessResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
 
 class DBBIResource(MethodResource, Resource):
+    @token_required
     @doc(description='Mostrar la configuración de la persistencia BI', tags=['Orch Settings'])
     @marshal_with(DBBISettingsSchema)
     def get(self,id = 1):
@@ -172,6 +147,7 @@ class DBBIResource(MethodResource, Resource):
         resp = dbbi_settings.__dict__.copy()
         return Response(json.dumps(resp), status=200, mimetype='application/json')
 
+    @token_required
     @doc(description='Cambio de un parámetro de la persistencia BI', tags=['Orch Settings'])
     @use_kwargs(DBBISettingsSchema, location=('json'))
     @marshal_with(DBBISettingsSchema)
@@ -192,6 +168,7 @@ class DBBIResource(MethodResource, Resource):
 
 
 class OrchestratorSettingsResource(MethodResource, Resource):
+    @token_required
     @doc(description='Mostrar la configuración del orquestador', tags=['Orch Settings'])
     @marshal_with(OrchestratorSettingsSchema)
     def get(self,id = 1):
@@ -203,6 +180,7 @@ class OrchestratorSettingsResource(MethodResource, Resource):
         resp = orchestrator_settings.__dict__.copy()
         return Response(json.dumps(resp), status=200, mimetype='application/json')
 
+    @token_required
     @doc(description='Cambio de un parámetro de la configuración del orquestador', tags=['Orch Settings'])
     @use_kwargs(OrchestratorSettingsSchema, location=('json'))
     @marshal_with(OrchestratorSettingsSchema)
@@ -222,6 +200,7 @@ class OrchestratorSettingsResource(MethodResource, Resource):
         return Response(resp,mimetype='application/json')
 
 class ProcessSettingsResource(MethodResource, Resource):
+    @token_required
     @doc(description='Mostrar la configuración general de los procesos', tags=['Orch Settings'])
     @marshal_with(ProcessGeneralSettingsSchema)
     def get(self,id = 1):
@@ -233,6 +212,7 @@ class ProcessSettingsResource(MethodResource, Resource):
         resp = process_settings.__dict__.copy()
         return Response(json.dumps(resp), status=200, mimetype='application/json')
 
+    @token_required
     @doc(description='Editar la configuración general de los procesos', tags=['Orch Settings'])
     @marshal_with(ProcessGeneralSettingsSchema)
     def patch(self, id_settings = 1):
@@ -257,14 +237,12 @@ def getDocInfo():
     """
     doc_info_list = []
     ep1 = DocInfo(doc_class = AMQPSettingsResource, doc_blueprint='orchestrator_settings_v1_0_bp', doc_endpoint='amqp_settings_resource')
-    ep2 = DocInfo(doc_class = DBPersistenceResource, doc_blueprint='orchestrator_settings_v1_0_bp', doc_endpoint='dbpersistence_settings_resource')
     ep3 = DocInfo(doc_class = DBProcessResource, doc_blueprint='orchestrator_settings_v1_0_bp', doc_endpoint='dbprocess_settings_resource')
     ep4 = DocInfo(doc_class = DBBIResource, doc_blueprint='orchestrator_settings_v1_0_bp', doc_endpoint='dbbi_settings_resource')
     ep5 = DocInfo(doc_class = OrchestratorSettingsResource, doc_blueprint='orchestrator_settings_v1_0_bp', doc_endpoint='orchestrator_settings_resource')
     ep6 = DocInfo(doc_class = ProcessSettingsResource, doc_blueprint='orchestrator_settings_v1_0_bp', doc_endpoint='process_settings_resource')
 
     doc_info_list.append(ep1)
-    doc_info_list.append(ep2)
     doc_info_list.append(ep3)
     doc_info_list.append(ep4)
     doc_info_list.append(ep5)
@@ -272,7 +250,6 @@ def getDocInfo():
     return doc_info_list
 
 api.add_resource(AMQPSettingsResource, '/api/orchestrator/amqp_settings/',endpoint='amqp_settings_resource')
-api.add_resource(DBPersistenceResource, '/api/orchestrator/dbpersistence_settings/',endpoint='dbpersistence_settings_resource')
 api.add_resource(DBProcessResource, '/api/orchestrator/dbprocess_settings/',endpoint='dbprocess_settings_resource')
 api.add_resource(DBBIResource, '/api/orchestrator/dbbi_settings/',endpoint='dbbi_settings_resource')
 api.add_resource(OrchestratorSettingsResource, '/api/orchestrator/orchestrator_settings/',endpoint='orchestrator_settings_resource')

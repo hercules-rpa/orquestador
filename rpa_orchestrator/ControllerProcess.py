@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from model import EDMA
 import rpa_orchestrator.lib.dbprocess.dbcon as dbprocess
 import json
 import numpy as np
@@ -6,7 +7,7 @@ import rpa_orchestrator.lib.dbprocess.models as model
 from datetime import datetime
 import model.SGI as SGI
 import model.process.Process4.RSController as RSController
-from model.process.Process4.model.ClassProcess4 import Investigador
+from model.process.Process4.model.ClassProcess4 import Investigador, Convocatoria
 import glob
 
 DIRECTORY_PROCESS_CONFIG = 'model/process/Process*'
@@ -337,13 +338,15 @@ class ControllerProcess(metaclass=Singleton):
         return None
 
     def feedback_convocatoria(self, idconvocatoria, idinvestigador, puntuacion):
-        sgi = SGI.SGI()
+        import rpa_orchestrator.lib.persistence.dbcon as dbcon
+        db = dbcon.ControllerDBPersistence()
+        global_setting = db.get_global_settings_by_id()
+        sgi = SGI.SGI(global_setting.sgi_ip, global_setting.sgi_user, global_setting.sgi_password)
         convocatoria = sgi.get_call(str(idconvocatoria))
         areas_tematicas = sgi.get_subject_area_announcement(
             str(idconvocatoria))
         if not convocatoria or not areas_tematicas:
             return False
-
         filter = {}
         filter['idinvestigador'] = idinvestigador
         filter['idconvocatoriasgi'] = idconvocatoria
@@ -429,9 +432,70 @@ class ControllerProcess(metaclass=Singleton):
         if inv:
             inv = json.loads(inv)[0]
             investigador = Investigador(inv['id'], inv['nombre'], inv['email'], inv['perfil'])
-            RSController.cargar_perfil(investigador)
-            return True
+            data = self.__precargar_perfil(investigador)
+            if data and len(data) > 0:
+                calificaciones = json.loads(json.dumps(self.procesar_puntuaciones(idinv, json.loads(data))), object_hook=lambda d: model.Calificacionarea(**d))
+                self.dump(calificaciones)
+                self.calcular_puntuaciones_areas(calificaciones)
+                return True
         return False
+
+    def __precargar_perfil(self, investigador: Investigador):
+        import rpa_orchestrator.lib.persistence.dbcon as dbcon
+        db = dbcon.ControllerDBPersistence()
+        rsController = RSController.RSController()
+        global_setting = db.get_global_settings_by_id()
+        sgi = SGI.SGI(global_setting.sgi_ip, global_setting.sgi_user, global_setting.sgi_password)
+        ed = EDMA.EDMA( global_setting.edma_host_sparql, str(global_setting.edma_port_sparql))
+        try:
+            if investigador.is_config_perfil:
+                return True #El perfil ya ha sido configurado no hace falta cargarlo de nuevo
+           
+            idref = ed.get_personaref(investigador.email)
+            if not idref:
+                return False
+            r = sgi.get_forms("solicitanteRef=="+str(idref))
+            areas = []
+            body = {}
+            index = {}
+            if r and len(r) > 0:
+                solicitudes = json.loads(r)
+                for solicitud in solicitudes:
+                    convocatoria = solicitud['convocatoriaId']
+                    if convocatoria:
+                        conv = Convocatoria(id=convocatoria, titulo=None)
+                        rsController.get_areamatica_sgi(conv)
+                        if conv.areaTematica:
+                            areasTematicas = conv.areaTematica
+                            for areaTematica in areasTematicas:
+                                areaTematica = areaTematica.areaHijo  # Nos quitamos la fuente
+                                while areaTematica:
+                                    if not str(areaTematica.id) in index:
+                                        body['idarea'] = areaTematica.id
+                                        body['puntuacion'] = 2.5
+                                        areas.append(body)
+                                        index[str(areaTematica.id)] = len(areas) - 1
+                                    else:
+                                        dict_body = areas[index[str(areaTematica.id)]]
+                                        dict_body['puntuacion'] += 0.15
+                                    areaTematica = areaTematica.areaHijo
+            return json.dumps(areas)
+        except Exception as e:
+            print("Error al cargar el perfil "+str(e))
+            return False
+
+    def procesar_puntuaciones(self, idinv, calificaciones):
+        calificaciones_inv = []
+        for calificacion in calificaciones:
+            del calificacion['nombre']
+            if calificacion['puntuacion'] > 5:
+                calificacion['puntuacion'] = 5
+            elif calificacion['puntuacion'] < 1:
+                calificacion['puntuacion'] = 1
+            calificacion['idinvestigador'] = idinv
+            calificaciones_inv.append(calificacion)
+        return calificaciones_inv
+        
     
     def get_config_list(self):
         modules_name = glob.glob(DIRECTORY_PROCESS_CONFIG)

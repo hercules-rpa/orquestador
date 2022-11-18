@@ -1,16 +1,16 @@
 import asyncio
 import json
 import traceback
+import hashlib
 from logging import Handler
 
 from model.GlobalSettings import GlobalSettings
 from model.OrchestratorSettings import OrchestratorSettings
 from model.DBBISettings import DBBISettings
 from model.DBProcessSettings import DBProcessSettings
-from model.DBPersistenceSettings import DBPersistenceSettings
 from model.AMQPSettings import AMQPSettings
 from model.ProcessSettings import ProcessSettings
-
+from werkzeug.security import check_password_hash
 
 import rpa_orchestrator.lib.Schedule as schedule
 from model.File import File
@@ -28,7 +28,6 @@ from customjson.JSONDecoder import JSONDecoder
 from customjson.JSONEncoder import JSONEncoder
 from threading import Lock
 from random import random, seed, randint, choice
-
 
 TIME_KEEP_ALIVE = 120
 TIME_REMOVE_ROBOT = 280
@@ -62,6 +61,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         self.process = {}
         self.db = db.ControllerDBPersistence()
         self.dbbi = dbbi.ControllerDBBI()
+        self.token_revoke = []
 
     def reload_robot(self):
         robots = self.db.read_robots_feed()
@@ -90,7 +90,6 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
             self.process[str(p['id'])] = p
 
     def restart(self):
-        # TODO
         pass
 
     async def notify_msg(self, msg):
@@ -136,6 +135,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         if robot.id in self.robot_list and not self.robot_list[robot.id][0].online:
             event = Event(body="Robot "+robot.name +
                           " se ha reconectado. ", msgtype=MSG_TYPE.CONNECTION)
+            self.robot_list[robot.id][0].online = True
             self.db.dump([robot, event])
             self.event_list.append(event)
         if robot.id in self.robot_list and self.robot_list[robot.id][0].token == robot.token and self.robot_list[robot.id][0].online:
@@ -436,9 +436,9 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         import rpa_orchestrator.lib.messagesjson.robotjson as robotjson
         return robotjson.get_robot(id_robot)
 
-    def get_process(self, id_process=None):
+    def get_process(self, id_process=None, visible = None):
         import rpa_orchestrator.lib.messagesjson.processjson as process
-        return process.get_process(id_process)
+        return process.get_process(id_process, visible)
 
     def get_process_form(self, id_process) -> json:
         try:
@@ -497,14 +497,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         return amqp_settings
 
     def update_amqp_settings(self,id,new_parameters):
-        return self.db.update_amqp_settings(id,new_parameters)    
-
-    def get_dbpersistence_settings_by_id(self,id) -> DBPersistenceSettings:
-        dbpersistence_settings = self.db.get_dbpersistence_settings_by_id(id)
-        return dbpersistence_settings
-
-    def update_dbpersistence_settings(self,id,new_parameters):
-        return self.db.update_dbpersistence_settings(id,new_parameters)   
+        return self.db.update_amqp_settings(id,new_parameters)
     
     def get_dbprocess_settings_by_id(self,id) -> DBProcessSettings:
         dbprocess_settings = self.db.get_dbprocess_settings_by_id(id)
@@ -539,36 +532,43 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
             return True
         return False
 
+    def get_username(self, username):
+        username = self.db.get_username(username)
+        return username
+
+    def user_login(self, username, password):
+        user = self.db.user_login(username, hashlib.md5(password.encode()).hexdigest())
+        if not user:
+            return None
+        return user
+
+    def update_username_token(self, username, access_token):
+        return self.db.update_username_token(username, access_token)
 
     def get_main_stats(self):
         import rpa_orchestrator.lib.messagesjson.statsjson as stats
         return stats.get_main_stats()
 
     def set_schedule(self, id_schedule, process_json) -> bool:
-        self.lock.acquire()
         try:
-            try:
-                process_dict = json.loads(process_json)
-                schedule_process = next(
-                    x for x in self.schedule_list if x.id == int(id_schedule))
-            except:
-                return False
-
+            process_dict = json.loads(process_json)
+            schedule_process = next(
+                x for x in self.schedule_list if x.id == int(id_schedule))
             process_dict['process']['id_process'] = schedule_process.get_processid()
             process_dict['process']['parameters'] = json.loads(
                 schedule_process.schedule_json)['process']['parameters']
             self.remove_schedule(id_schedule)
             schedule_process = ScheduleProcess(id=schedule_process.id, id_robot=process_dict['process']['id_robot'], schedule_json=json.dumps(
                 process_dict), function=self.do_job_schedule)
+            
             schedule_process.time_to_schedule()
             self.db.dump([schedule_process])
             self.schedule_list.append(schedule_process)
-
             return True
         except Exception as e:
+            print("Error intentando modificar el proceso")
             print(str(e))
-        finally:
-            self.lock.release()
+            return False
 
     def set_event_read(self, id_event):
         event = self.db.read_events({'id': id_event})

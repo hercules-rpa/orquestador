@@ -1,0 +1,23 @@
+{
+    "AMQP-SETTING":{
+        "user":             "guest",
+        "password":         "guest",
+        "host":             "127.0.0.1",
+        "port":             "5672",
+        "subscriptions":    ["rpa.robot.robot2","rpa.robot.general"],
+        "exchange_name":    "rpa",
+        "queue_name":       "robot2"
+    },
+
+    "ROBOT-SETTING":{
+        "id":               "robot2",
+        "name":             "RobotUMU2",
+        "address":          "Espinardo",
+        "registrations":    "Pleiades",
+        "ip_api": "10.208.99.12",
+        "port_api":        "5000",
+        "frontend":        "http://rpa.hercules.com"
+    }
+
+
+}

@@ -35,7 +35,7 @@ class Robot(Base):
 
     id = Column(String(255), primary_key=True)
     name = Column(String(255), nullable=False)
-    ip_address = Column(String(255), nullable=False)
+    ip_address = Column(String(255))
     mac     = Column(String(255))
     address = Column(String(255))
     registrations = Column(String(255))
@@ -85,7 +85,7 @@ class File(Base):
 
 class GlobalSettings(Base):
     __tablename__ = 'global_settings'
-    id = Column(Integer, primary_key=True, server_default=text("nextval('global_settings_id_seq'::regclass)"))
+    id = Column(Integer, primary_key=True)
     edma_host_sparql = Column(String(255), nullable=False)
     edma_host_servicios = Column(String(255), nullable=False)
     edma_port_sparql = Column(Integer, nullable=False)
@@ -95,14 +95,13 @@ class GlobalSettings(Base):
     sgi_port = Column(Integer, nullable=False)
     database_ip = Column(String(255), nullable=False)
     database_port = Column(Integer, nullable=False)
-    ftp_user = Column(String(255),nullable=False)
-    ftp_password = Column(String(1000), nullable=False)
-    ftp_port = Column(Integer, nullable=False)
+    url_release = Column(String(255),nullable=False)
+    url_upload_cdn = Column(String(1000),nullable=False)
 
 class AMQPSettings(Base):
     __tablename__ = 'amqp_settings'
 
-    id = Column(Integer, primary_key=True, server_default=text("nextval('amqp_settings_id_seq'::regclass)"))
+    id = Column(Integer, primary_key=True)
     user = Column(String(1000), nullable=False)
     password = Column(String(1000), nullable=False)
     host = Column(String(1000), nullable=False)
@@ -111,21 +110,10 @@ class AMQPSettings(Base):
     exchange_name = Column(String(100), nullable=False)
     queue_name = Column(String(100), nullable=False)
 
-
-class DBPersistenceSettings(Base):
-    __tablename__ = 'dbpersistence_settings'
-
-    id = Column(Integer, primary_key=True, server_default=text("nextval('dbpersistence_settings_id_seq'::regclass)"))
-    user = Column(String(1000), nullable=False)
-    password = Column(String(1000), nullable=False)
-    host = Column(String(100), nullable=False)
-    port = Column(Integer, nullable=False)
-    database = Column(String(100), nullable=False)
-
 class DBProcessSettings(Base):
     __tablename__ = 'dbprocess_settings'
 
-    id = Column(Integer, primary_key=True, server_default=text("nextval('dbprocess_settings_id_seq'::regclass)"))
+    id = Column(Integer, primary_key=True)
     user = Column(String(1000), nullable=False)
     password = Column(String(1000), nullable=False)
     host = Column(String(100), nullable=False)
@@ -135,7 +123,7 @@ class DBProcessSettings(Base):
 class DBBISettings(Base):
     __tablename__ = 'dbbi_settings'
 
-    id = Column(Integer, primary_key=True, server_default=text("nextval('dbbi_settings_id_seq'::regclass)"))
+    id = Column(Integer, primary_key=True)
     user = Column(String(1000), nullable=False)
     password = Column(String(1000), nullable=False)
     host = Column(String(100), nullable=False)
@@ -145,7 +133,7 @@ class DBBISettings(Base):
 class OrchestratorSettings(Base):
     __tablename__ = 'orchestrator_settings'
 
-    id = Column(Integer, primary_key=True, server_default=text("nextval('orchestrator_settings_id_seq'::regclass)"))
+    id = Column(Integer, primary_key=True)
     id_orch = Column(String(1000), nullable=False)
     name = Column(String(1000), nullable=False)
     company = Column(String(1000), nullable=False)
@@ -171,3 +159,10 @@ class RobotSchedule(Base):
     scheduleid = Column(ForeignKey('schedule.id'), primary_key=True, nullable=False)
 
     schedule = relationship('Schedule')
+
+class Username(Base):
+    __tablename__ = 'users'
+
+    username = Column(String(255), primary_key=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    token = Column(String(255), nullable=False)

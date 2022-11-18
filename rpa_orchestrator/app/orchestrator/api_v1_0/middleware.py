@@ -1,22 +1,73 @@
-from werkzeug.wrappers import Request, Response, ResponseStream
-from functools import wraps
-from flask import request, abort
-from flask_jwt_extended import get_jwt, verify_jwt_in_request
-#https://www.youtube.com/watch?v=qAqxSTG2870
-#https://www.youtube.com/watch?v=kJSl7pWeOfU
+from werkzeug.wrappers                  import Request, Response, ResponseStream
+from functools                          import wraps
+from flask                              import request, abort, current_app
+from flask_jwt_extended                 import get_jwt, verify_jwt_in_request, get_jwt_identity
+from rpa_orchestrator.orchestrator      import Orchestrator
+
+import datetime
+import json
+import jwt
 
 def token_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        if 'Authorization' in request.headers:
+        token = None
+        orch = Orchestrator()
+        if 'Token_Robot' in request.headers:
             try:
-                verify_jwt_in_request()
-                return func(*args, **kwargs)
+                token = request.headers['Token_Robot']
+                if token == "":
+                    return Response(json.dumps({"msg": "Token_Robot no presente"}), status=401, mimetype='application/json')
             except Exception as e:
                 print(str(e))
+                return Response(json.dumps({"msg": "Token_Robot no válido"}), status=403, mimetype='application/json')       
+            for robot in orch.robot_list.values():
+                if robot[0].token == token:
+                    return func(*args, **kwargs)
+        elif 'Authorization' in request.headers:
+            try:
+                token = request.headers['Authorization'].split(" ")[1]
+                if token == "":
+                    return Response(json.dumps({"msg": "Authorization token no presente"}), status=401, mimetype='application/json')
+
+                for jwt_token in orch.token_revoke:
+                    try:
+                        jwt.decode(jwt_token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                    except Exception as e:
+                        if type(e) == jwt.exceptions.ExpiredSignatureError:
+                            orch.token_revoke.remove(jwt_token)
+                    if jwt_token == token:
+                        resp = json.dumps({"status": "Token ya revocado."})
+                        return Response(resp, status=401, mimetype='application/json') 
+                
+                data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                current_user = orch.get_username(data['sub'])
+                if not current_user:
+                    return Response(json.dumps({"msg": "Authorization token no válido. El usuario no existe"}), status=403, mimetype='application/json')
+            
+            except Exception as e:
+                if type(e) == jwt.exceptions.ExpiredSignatureError:
+                    resp = json.dumps({"msg": "Token expirado."})
+                    return Response(resp, status=403, mimetype='application/json')
+                if type(e) == jwt.exceptions.DecodeError:
+                    resp = json.dumps({"msg": "Token malformado."})
+                    return Response(resp, status=403, mimetype='application/json')
                 abort(403, description="Token no valido")
+            return func(*args, **kwargs)
         else:
-            abort(403, description="Token no presente") 
+            return Response(json.dumps({"msg": "Token no presente"}), status=403, mimetype='application/json') 
+    return decorated_function
+
+def token_required_investigador(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        try:
+            if 'Authorization' in request.headers:
+                verify_jwt_in_request()
+                return func(*args, **kwargs)
+        except Exception as e:
+            print(str(e))
+            abort(403, description="Token no valido")
     return decorated_function
 
 def validate_create_process(func):
@@ -27,6 +78,7 @@ def validate_create_process(func):
 
         try:
             time_schedule = request.get_json(force=True)['time_schedule']
+            print(time_schedule)
             process       = request.get_json(force=True)['process']
         except:
             abort(406, description="Mala sintaxis JSON")

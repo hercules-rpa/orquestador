@@ -15,17 +15,16 @@ class ExecProcess():
     def exec(self):
         try:
             print("Se va a ejecutar ", self.process.name)
+            self.log = self.process.log
             self.process.execute()
         except Exception as e:
             self.process.log.state = "ERROR"
-            self.process.log.finished = True
             self.process.log.completed = 100
             self.process.update_log("Ocurrió un error inesperado. "+str(traceback.format_exc()), True)
             self.process.update_log("Ocurrió un error inesperado. "+str(e), True)
             end_time = time.time()
             self.process.log.end_log(end_time)
             #Notificamos a nosotros mismo para que mande el mensaje al orquestador
-            self.listener.notify_log(self.process.log)
             print("La ejecucion ha terminado con un error inesperado")
             print(traceback.format_exc())
             print(str(e))

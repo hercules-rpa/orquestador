@@ -1,0 +1,23 @@
+{
+    "AMQP-SETTING":{
+        "user":             "admin",
+        "password":         "rpa123",
+        "host":             "10.208.99.12",
+        "port":             "5672",
+        "subscriptions":    ["rpa.robot.robotremote5","rpa.robot.general"],
+        "exchange_name":    "rpa",
+        "queue_name":       "robotremote5"
+    },
+
+    "ROBOT-SETTING":{
+        "id":         "robotremote5",
+        "name":       "RobotMacBook",
+        "address":          "Churra",
+        "registrations":    "Zulo",
+        "ip_api": "10.208.99.12",
+        "port_api":        "5000",
+        "frontend":         "http://rpa.hercules.com"
+    }
+
+
+}

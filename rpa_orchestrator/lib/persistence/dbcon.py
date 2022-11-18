@@ -313,32 +313,6 @@ class ControllerDBPersistence(metaclass=Singleton):
         session.close()
         return False
 
-    def get_dbpersistence_settings_by_id(self, id):
-        session = self.Session()
-        settings = session.query(model.DBPersistenceSettings).filter_by(id=id).first()
-        session.close()
-        if settings:
-            return modelToClass.toDBPersistence_Settings([settings])[0]
-        return None
-    
-    def update_dbpersistence_settings(self, id, new_parameters):
-        session = self.Session()
-        exists = session.query(model.DBPersistenceSettings).filter_by(id=id).first()
-        if exists:
-            try: 
-                for (key, value) in new_parameters.items():
-                    setattr(exists, key, value)
-                session.commit()
-                session.close()
-                return True
-            except:
-                print("No existe el campo "+key+" o el valor es erroneo (amqp settings)")
-                session.close()
-                return False
-        session.close()
-        return False
-
-
     def get_dbprocess_settings_by_id(self, id=1):
         session = self.Session()
         settings = session.query(model.DBProcessSettings).filter_by(id=id).first()
@@ -415,6 +389,37 @@ class ControllerDBPersistence(metaclass=Singleton):
         session.close()
         return False
 
+    def get_username(self, username):
+        session = self.Session()
+        settings = session.query(model.Username).filter_by(username=username).first()
+        session.close()
+        if settings:
+            return modelToClass.toUser([settings])[0]
+        return None
+
+    def user_login(self, username, password):
+        session = self.Session()
+        settings = session.query(model.Username).filter_by(username=username, password=password).first()
+        session.close()
+        if settings:
+            return modelToClass.toUser([settings])[0]
+        return None        
+
+    def update_username_token(self, username, access_token):
+        session = self.Session()
+        exists = session.query(model.Username).filter_by(username=username).first()
+        if exists:
+            try: 
+                setattr(exists, "token", access_token)
+                session.commit()
+                session.close()
+                return True
+            except:
+                print("No existe el campo o el valor es erroneo (usuario)")
+                session.close()
+                return False
+        session.close()
+        return False
 
 
     def get_process_settings_by_id(self, id):

@@ -7,6 +7,9 @@ import json
 import Utils
 import requests
 
+from model.RPA import RPA
+from rpa_robot.ControllerRobot import ControllerRobot
+
 
 class Pstatus(Enum):
     INITIALIZED = 1
@@ -67,6 +70,8 @@ class ProcessCommand(ABC):
         self.ip_api = ip_api
         self.port_api = port_api      
         self.result = None
+        cr = ControllerRobot() 
+        self.rpa:RPA = RPA(cr.robot.token)
 
     def add_log_listener(self, listener):
         self.log.add_log_listener(listener)
@@ -75,11 +80,14 @@ class ProcessCommand(ABC):
         self.log.add_data_listener(listener)
 
     def update_log(self, data, timestamp=False):
-        if (timestamp is True):
-            self.log.update_log("["+Utils.time_to_str(time.time())+"]" +
-                                " Process"+str(self.id)+"@robot:"+self.id_robot+" "+data+"\n")
+        if  not self.log.finished:
+            if (timestamp is True):
+                self.log.update_log("["+Utils.time_to_str(time.time())+"]" +
+                                    " Process"+str(self.id)+"@robot:"+self.id_robot+" "+data+"\n")
+            else:
+                self.log.update_log(data)
         else:
-            self.log.update_log(data)
+            print("Se intenta escribir en el log cuando ya ha sido cerrado (end_log)")
 
     def notify_log_data(self, log, new_data):
         self.update_log(new_data.rstrip()+" (Child of " +
@@ -132,7 +140,7 @@ class ProcessCommand(ABC):
                     url = url + '/'
 
                 for element in elements:
-                    requests.patch(url + str(element.id),
+                    self.rpa.patch(url + str(element.id),
                                 headers=headers, data=payload)
             else:
                 print('ERROR no ha sido posible persistir la colección de elementos')

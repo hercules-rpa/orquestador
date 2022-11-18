@@ -2,6 +2,8 @@ from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 from model.process.Process3.Execution_Model import Execution_Model
 from rpa_robot.ControllerSettings import ControllerSettings
+from rpa_robot.ControllerRobot import ControllerRobot
+from model.RPA import RPA
 
 import time
 import csv
@@ -15,11 +17,17 @@ cs = ControllerSettings()
 class BDNS:
 
     def __init__(self, server, port):
-        self.array = []
-        self.msg_notify = ""
-        self.server = server
-        self.port = port
-        self.conf = cs.get_process_settings(self.server, self.port)
+        if (server == "" and port == ""):
+            self.array = []
+            self.msg_notify = ""
+        else:
+            self.array = []
+            self.msg_notify = ""
+            self.server = server
+            self.port = port
+            self.conf = cs.get_process_settings(self.server, self.port)
+            cr = ControllerRobot()
+            self.rpa = RPA(cr.robot.token)
 
     def search_with_date(self, dD: time, dH: time, *args: str) -> dict:
         """
@@ -69,7 +77,7 @@ class BDNS:
             lines = csv.DictReader(csvfile, delimiter=',')
             for row in lines:
                 bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + self.conf['bdns_url'] + "GE/es/convocatoria/" + row['Código BDNS']
-                response = requests.get(bbdd_url)
+                response = self.rpa.get(bbdd_url)
                 if self.search_name_csv(row['Título de la convocatoria'].lower(), args) and response.status_code == 404:
                     key = row['Código BDNS']
                     data[key] = row
@@ -239,7 +247,7 @@ class BDNS:
         }
         payload = json.dumps(array)
         bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias"
-        response = requests.post(bbdd_url, headers=headers, data=payload)
+        response = self.rpa.post(bbdd_url, payload)
         self.msg_notify = str(response.status_code) + " --- " + response.text
 
     def notify(self) -> str:

@@ -93,8 +93,6 @@ class GlobalSettings(Base):
     sgi_password = Column(String(1000), nullable=False)
     sgi_ip = Column(String(255), nullable=False)
     sgi_port = Column(Integer, nullable=False)
-    database_ip = Column(String(255), nullable=False)
-    database_port = Column(Integer, nullable=False)
     url_release = Column(String(255),nullable=False)
     url_upload_cdn = Column(String(1000),nullable=False)
 

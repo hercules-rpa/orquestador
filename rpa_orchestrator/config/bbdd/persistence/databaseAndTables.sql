@@ -18,7 +18,7 @@ CREATE TABLE public.DBPROCESS_SETTINGS (id int4 NOT NULL, "user" varchar(255) NO
 CREATE TABLE public.DBBI_SETTINGS (id int4 NOT NULL, "user" varchar(255) NOT NULL,password varchar(255) NOT NULL, host varchar(255) NOT NULL, port int8 NOT NULL,keyspace varchar(255) NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.ORCHESTRATOR_SETTINGS (id int4 NOT NULL, id_orch varchar(1000) NOT NULL,name varchar(1000) NOT NULL,company varchar(1000) NOT NULL, pathlog_store varchar(1000) NOT NULL, cdn_url varchar(1000) NOT NULL, PRIMARY KEY (id));
 CREATE TABLE public.PROCESS_SETTINGS (id int4 NOT NULL, salaprensa_url varchar(1024) NOT NULL,ucc_url varchar(1024) NOT NULL,boe_url varchar(1024) NOT NULL, bdns_url varchar(1024) NOT NULL, bdns_search varchar(1024) NOT NULL, europe_url varchar(1024) NOT NULL, europe_link varchar(1024) NOT NULL, PRIMARY KEY (id));
-CREATE TABLE public.GLOBAL_SETTINGS (id int4 NOT NULL, edma_host_sparql varchar(255) NOT NULL,edma_host_servicios varchar(255) NOT NULL,edma_port_sparql bigint NOT NULL, sgi_ip varchar(255) NOT NULL,sgi_port bigint NOT NULL,database_ip varchar(255) NOT NULL,database_port bigint NOT NULL,sgi_user varchar(255),sgi_password varchar(1024), url_upload_cdn varchar(1024) NOT NULL, url_release varchar(1024) NOT NULL, PRIMARY KEY (id));
+CREATE TABLE public.GLOBAL_SETTINGS (id int4 NOT NULL, edma_host_sparql varchar(255) NOT NULL,edma_host_servicios varchar(255) NOT NULL,edma_port_sparql bigint NOT NULL, sgi_ip varchar(255) NOT NULL,sgi_port bigint NOT NULL,sgi_user varchar(255),sgi_password varchar(1024), url_upload_cdn varchar(1024) NOT NULL, url_release varchar(1024) NOT NULL, PRIMARY KEY (id));
 
 
 -- Relation

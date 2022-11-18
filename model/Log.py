@@ -31,9 +31,9 @@ class Log:
             self.log_file.write(new_data)
             self.log_file.flush()
         self.data = self.data + new_data
-        if self.listener is not None:
+        if self.listener:
             self.listener.notify_log(self)
-        if self.data_listener is not None:
+        if self.data_listener:
             self.data_listener.notify_log_data(self,new_data)
 
     def write_log(self, path):

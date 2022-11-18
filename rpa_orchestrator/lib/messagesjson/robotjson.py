@@ -96,7 +96,7 @@ def get_robot(id_robot) -> json:
                     'python_version':robot.python_version,
                     'token': robot.token,
                     'online': robot.online,
-                    'time_online': 0 if not robot.online and not robot.connected else datetime.now().timestamp() - robot.connected,
+                    'time_online': 0 if not robot.online or not robot.connected else datetime.now().timestamp() - robot.connected,
                     'last_seen':time.timestamp(),
                     'process_running': process_dict,
                     'process_queue': process_queue,

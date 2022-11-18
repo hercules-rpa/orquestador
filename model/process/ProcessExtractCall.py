@@ -1,4 +1,5 @@
 from rpa_robot.ControllerSettings import ControllerSettings
+from rpa_robot.ControllerRobot import ControllerRobot
 from model.process.Process3.Execution_Model import Execution_Model
 from model.process.Process3.Adapter_BDNS import Adapter_BDNS
 from model.process.Process3.Adapter_Europe import Adapter_Europe
@@ -6,10 +7,10 @@ from model.process.ProcessCommand import ProcessCommand
 from model.process.ProcessCommand import Pstatus as pstatus
 from model.process.ProcessCommand import ProcessID
 from model.process.UtilsProcess import UtilsProcess
+from model.RPA import RPA
 
 import datetime
 import time
-import requests
 import json
 
 NAME = "Extract Convocatorias"
@@ -17,7 +18,7 @@ DESCRIPTION = "Proceso que extrae las últimas convocatorias de las fuentes de d
 REQUIREMENTS = ['rpaframework', 'playwright', 'selenium', 'bs4']
 ID = ProcessID.EXTRACT_CALLS.value
 cs = ControllerSettings()
-
+cr = ControllerRobot()
 
 class ProcessExtractCall(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api=None, port_api=None):
@@ -51,7 +52,7 @@ class ProcessExtractCall(ProcessCommand):
                 bbdd_url = "http://" + self.ip_api + ":" + self.port_api + \
                     "/api/orchestrator/register/convocatoria?url=https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/" + \
                     self.parameters['bdns']
-                response = requests.get(bbdd_url)
+                response = self.rpa.get(bbdd_url)
                 if response.ok:
                     self.update_log(
                         "La convocatoria está en nuestra base de datos", True)
@@ -74,13 +75,13 @@ class ProcessExtractCall(ProcessCommand):
                 if 'search' in self.parameters.keys():
                     try:
                         if 'start_date' in self.parameters.keys() and 'end_date' in self.parameters.keys():
-                            self.update_log("Buscamos la convocatoria por las fechas indicadas: desde " +
+                            self.update_log("Buscamos la convocatoria " + type(item).__name__ + " por las fechas indicadas: desde " +
                                             self.parameters['start_date'] + " hasta " + self.parameters['end_date'] + " con las palabras claves = " + self.parameters['search'] + ". ", True)
                             item.search_date(
                                 self.parameters['start_date'], self.parameters['end_date'], self.parameters['search'])
                         else:
                             self.update_log(
-                                "Buscamos la convocatoria diaria", True)
+                                "Buscamos la convocatoria " + type(item).__name__ + " diaria", True)
                             item.search(self.parameters['search'])
                         if type(item).__name__ == "Adapter_Europe":
                             body = item.notify()
@@ -92,13 +93,13 @@ class ProcessExtractCall(ProcessCommand):
                 else:
                     try:
                         if 'start_date' in self.parameters.keys() and 'end_date' in self.parameters.keys():
-                            self.update_log("Buscamos la convocatoria por las fechas indicadas: desde " +
+                            self.update_log("Buscamos la convocatoria " + type(item).__name__ + " por las fechas indicadas: desde " +
                                             self.parameters['start_date'] + " hasta " + self.parameters['end_date'] + ". ", True)
                             item.search_date(
                                 self.parameters['start_date'], self.parameters['end_date'])
                         else:
                             self.update_log(
-                                "Buscamos la convocatoria diaria", True)
+                                "Buscamos la convocatoria " + type(item).__name__ + " diaria", True)
                             item.search()
                         if type(item).__name__ == "Adapter_Europe":
                             body = item.notify()
@@ -139,7 +140,7 @@ class ProcessExtractCall(ProcessCommand):
         """
         url = "http://" + self.ip_api + ":" + self.port_api + \
             "/api/orchestrator/register/convocatorias?notificada=false&_from=BDNS"
-        response = requests.get(url)
+        response = RPA(cr.robot.token).get(url)
         if response.ok:
             self.update_log("Encontramos que hay una colección de la BDNS para inyectar en el SGI.", True)
             sgi = cs.get_sgi(self.ip_api, self.port_api)
@@ -179,8 +180,7 @@ class ProcessExtractCall(ProcessCommand):
                         self.ip_api + ":" + self.port_api + \
                         "/api/orchestrator/register/convocatoria/" + \
                         str(item['id'])
-                    requests.patch(
-                        url_update, headers=headers, data='{"notificada":true, "id_sgi":' + str(json.loads(res)['id']) + '}')
+                    RPA(cr.robot.token).patch(url_update, '{"notificada":true, "id_sgi":' + str(json.loads(res)['id']) + '}')
                     self.update_log(
                         "Actualizamos nuestra base de datos con la notificación", True)
 

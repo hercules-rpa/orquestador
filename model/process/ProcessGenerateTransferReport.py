@@ -1,8 +1,7 @@
 import json
 import time
 from datetime import date, datetime
-from unittest import result
-import requests
+from rpa_robot.ControllerRobot import ControllerRobot
 from rpa_robot.ControllerSettings import ControllerSettings
 from model.process.Process1.Subprocess.ProcessExtractCalls import \
     ProcessExtractCalls
@@ -18,6 +17,7 @@ from model.process.Process1.Subprocess.ProcessExtractThesis import \
     ProcessExtractThesis
 from model.process.ProcessCommand import ProcessCommand, ProcessID, Pstatus
 from model.process.UtilsProcess import UtilsProcess
+from model.RPA import RPA
 from model.process.Process1.Subprocess.ProcessExtractOTC import ProcessExtractOTC
 
 NAME = "Process Generate Transfer Report"
@@ -31,6 +31,10 @@ class ProcessGenerateTransferReport(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api=None, port_api=None):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
+
+        cr = ControllerRobot()        
+        self.rpa:RPA = RPA(cr.robot.token)
+
 
     def extract_articles(self, start_date, end_date):
         """
@@ -313,12 +317,10 @@ class ProcessGenerateTransferReport(ProcessCommand):
                     "fecha_ejecucion": time.mktime(time.strptime(now, '%Y/%m/%d')),
                     "exito": success
                 }])
+            
+            response = self.rpa.post('http://' + self.ip_api + ':' + self.port_api + '/api/orchestrator/register/ejecuciones_boletines',
+            payload)
 
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            response = requests.post(
-                'http://' + self.ip_api + ':' + self.port_api + '/api/orchestrator/register/ejecuciones_boletines', headers=headers, data=payload)
         except:
             self.notify_update(
                 "ERROR al persistir los datos de la ejecución del proceso")
@@ -333,11 +335,8 @@ class ProcessGenerateTransferReport(ProcessCommand):
             'Obteniendo datos relacionados con la última ejecución del proceso.')
         result = None
         try:
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            response = requests.get(
-                'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/register/ultima_ejecucion_boletin', headers)
+            response = self.rpa.get(
+                'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/register/ultima_ejecucion_boletin')
             if response and response.status_code != 200:
                 result = response
         except:
@@ -406,26 +405,27 @@ class ProcessGenerateTransferReport(ProcessCommand):
             start_str = start_date.strftime("%Y%m%d%H%M%S")
             end_date = end_date.replace(hour=23, minute=59)
             end_str = end_date.strftime("%Y%m%d%H%M%S")
-
+            self.log.completed = 10
             offers = self.extract_tecnologicalOffers(start_str, end_str)
+            self.log.completed = 20
             msg += self.msg_otc(offers)
             msg += '<br>'
-
+            self.log.completed = 30
             thesis = self.extract_thesis(start_date, end_date)
             if thesis and thesis[1]:
                 msg += thesis[1]
                 msg += '<br>'
-
+            self.log.completed = 40
             articles = self.extract_articles(start_date.strftime(
                 "%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
             msg += self.msg_articles(articles)
             msg += '<br>'
-
+            self.log.completed = 50
             news = self.extract_news(start_date.strftime(
                 "%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
             msg += self.msg_news(news)
             msg += '<br>'
-
+            self.log.completed = 60
             start_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
             end_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -433,7 +433,7 @@ class ProcessGenerateTransferReport(ProcessCommand):
             if calls and calls[1]:
                 msg += calls[1]
                 msg += '<br>'
-
+            self.log.completed = 70
             elements = self.extract_projects_contracts(start_str, end_str)
             if elements:
                 if elements[0]:
@@ -442,14 +442,14 @@ class ProcessGenerateTransferReport(ProcessCommand):
                 if elements[1]:
                     msg += elements[1][0]
                     msg += '<br>'
-
+            self.log.completed = 80
             elements = self.extract_inventions(start_str, end_str)
             if elements:
                 msg += elements[0][1]
                 msg += '<br>'
                 msg += elements[1][1]
                 msg += '<br>'
-
+            self.log.completed = 90
             try:
                 receivers = self.parameters['receivers']
                 if msg:
@@ -469,7 +469,6 @@ class ProcessGenerateTransferReport(ProcessCommand):
                         'ERROR al enviar el correo electrónico.')
                     self.log.state = "ERROR"
                 else:
-                    self.log.state = None
                     self.notify_update(
                         'El informe ha sido enviado correctamente por correo electrónico.')
 

@@ -14,7 +14,7 @@
         "name":"receivers",
         "validation":"min:1,length",
         "repeatable":true,
-        "add-label":"+ Add receiver",
+        "add-label":"+ Destinatario",
         "value":[
            {
               
@@ -24,7 +24,7 @@
            {
               "type":"text",
               "name":"receiver",
-              "label":"Receiver",
+              "label":"Destinatario",
               "validation":"email"
            }
         ]

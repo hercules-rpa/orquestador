@@ -8,7 +8,7 @@ import os
 from model.process.ProcessCommand import ProcessCommand
 from model.process.ProcessCommand import Pstatus as pstatus
 from model.process.ProcessCommand import ProcessID
-from model.process.ProcessPdfToTable import ProcessPdfToTable
+from module_cognitive_treelogic import PDF2Table
 import json
 import datetime
 #conda install -c conda-forge/label/gcc7 ghostscript
@@ -131,14 +131,9 @@ class ProcessExtractInfoPDF(ProcessCommand):
 
     def get_table(self, parameters):
         self.update_log("Llamamos a la librería de tecnologías cognitivas para obtener las tablas",True)
-        pspdf = ProcessPdfToTable(self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters)
+        pspdf = PDF2Table(parameters)
         pspdf.add_data_listener(self)
         pspdf.execute()
-
-        if pspdf.log.state == "ERROR":
-            self.update_log("Llamada al módulo de tecnologias cognitivas ha terminado con ERROR",True)
-            self.result = None
-            return None
         
         if pspdf.result and len(pspdf.result)>0:
             dfs = pspdf.result[0]

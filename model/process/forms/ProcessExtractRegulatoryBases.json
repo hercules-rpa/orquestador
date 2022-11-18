@@ -11,11 +11,11 @@
    },
    {
       "type":"group",
-      "label":"receivers otri",
+      "label":"Destinatarios OTRI",
       "name":"receivers_otri",
       "validation":"min:1,length,required",
       "repeatable":true,
-      "add-label":"+ Add receiver",
+      "add-label":"+ Destinatario",
       "value":[
          {
             
@@ -25,18 +25,18 @@
          {
             "type":"text",
             "name":"receiver",
-            "label":"Receiver",
+            "label":"Destinatario",
             "validation":"email"
          }
       ]
    },
       {
       "type":"group",
-      "label":"receivers ugi",
+      "label":"Destinatarios UGI",
       "name":"receivers_ugi",
       "validation":"min:1,length,required",
       "repeatable":true,
-      "add-label":"+ Add receiver",
+      "add-label":"+ Destinatario",
       "value":[
          {
             
@@ -46,7 +46,7 @@
          {
             "type":"text",
             "name":"receiver",
-            "label":"Receiver",
+            "label":"Destinatario",
             "validation":"email"
          }
       ]

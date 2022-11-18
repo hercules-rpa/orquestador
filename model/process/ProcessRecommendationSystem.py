@@ -60,7 +60,7 @@ class ProcessRecommendationSystem(ProcessCommand):
             return
         self.update_log(
             "Número de total de convocatorias a notificar: "+str(len(convocatorias)), True)
-        # Cogemos una para q tarde menos solo PRUEBAS
+
         for convocatoria in convocatorias:
             self.log.completed += 95/len(convocatorias)
             self.update_log("Convocatoria. Título: " +
@@ -69,12 +69,8 @@ class ProcessRecommendationSystem(ProcessCommand):
             inv_sin_solicitud, inv_con_solicitud = self.process_investigadores(
                 convocatoria)
             if not inv_sin_solicitud:
-                self.log.completed = 100
                 self.update_log(
-                    "No hay investigadores a notificar, el proceso ha terminado. ", True)
-                self.state = pstatus.FINISHED
-                self.log.end_log(time.time())
-                return
+                    "No hay investigadores a notificar para esta convocatoria, han sido ya notificados o no es de interés. ", True)
             
             parameters_process = {}
             parameters_process['convocatoria'] = convocatoria
@@ -93,7 +89,7 @@ class ProcessRecommendationSystem(ProcessCommand):
             
             input_list = []
             
-            threshold_score = self.parameters['threshold_score']
+            threshold_score = float(self.parameters['threshold_score'])
             format_input = {}
             if self.parameters['fc_activo']:
                 self.update_log("Se procede a llamar al sistema: FiltroColaborativo ", True)
@@ -463,7 +459,7 @@ class ProcessRecommendationSystem(ProcessCommand):
             </html>
         """        
         utils = UtilsProcess(self.log.id_schedule, self.log.id, self.id_robot, self.priority, self.log.log_file_path)
-        state = utils.send_email_html([{"receiver":"josemanuel.bernabe@um.es"}], body, 'Convocatoria SGI', process=self)
+        state = utils.send_email_html([{"receiver":investigador.email}], body, 'Convocatoria SGI', process=self)
         if state == "ERROR":
             self.update_log("No se pudo enviar el correo al investigador"+investigador.email, True)
             self.log.state = "ERROR"

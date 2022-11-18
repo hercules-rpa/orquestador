@@ -1,8 +1,9 @@
 import json
 import os
 import time
-import requests
 from datetime import datetime, timedelta
+from model.RPA import RPA
+from rpa_robot.ControllerRobot import ControllerRobot
 from rpa_robot.ControllerSettings import ControllerSettings
 from model.process.Process3.BaseReguladora import RegulatoryBase
 from model.process.ProcessCommand import ProcessCommand
@@ -24,6 +25,8 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api=None, port_api=None):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
+        cr = ControllerRobot()        
+        self.rpa:RPA = RPA(cr.robot.token)
 
     def get_nodes(self, params, delete_file: bool = True) -> list:
         """
@@ -125,19 +128,23 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
         conf = cs.get_process_settings(self.ip_api, self.port_api)
         nodes: list = None
         if 'boe_url' in conf and conf['boe_url']:
-            year = str(date.year)
-            month = str(date.month)
-            if date.month < 10:
-                month = '0' + month
-            day = str(date.day)
-            if date.day < 10:
-                day = '0' + day
+            try:
+                year = str(date.year)
+                month = str(date.month)
+                if date.month < 10:
+                    month = '0' + month
+                day = str(date.day)
+                if date.day < 10:
+                    day = '0' + day
 
-            boe_id = 'BOE-S-' + year+month+day
-            url = conf['boe_url'] + boe_id
-            self.notify_update(
-                'Obteniendo las bases reguladoras de la siguiente url: ' + url)
-            nodes = self.get_bbrrnodes(url, boe_id)
+                boe_id = 'BOE-S-' + year+month+day
+                url = conf['boe_url'] + boe_id
+                self.notify_update(
+                    'Obteniendo las bases reguladoras de la siguiente url: ' + url)
+                nodes = self.get_bbrrnodes(url, boe_id)
+            except Exception as e:
+                self.notify_update(str(e))
+                self.notify_update('ERROR en la obtención del BOE con url: ' + url)
         else:
             self.notify_update('ERROR al obtener la url de consulta de BOE')
 
@@ -181,12 +188,11 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
                     "notificada": notify
                 }])
 
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            url = "http://"+self.ip_api+":"+self.port_api + \
-                "/api/orchestrator/register/basesreguladoras"
-            response = requests.post(url=url, headers=headers, data=payload)
+            print(payload)
+
+            response = self.rpa.post("http://"+self.ip_api+":"+self.port_api + \
+                "/api/orchestrator/register/basesreguladoras", payload)
+            print(response.text)
             return response
 
     def get_not_notify(self):
@@ -195,12 +201,8 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
         :return list lista de bases reguladoras no notificadas
         """
         result = []
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        url = "http://"+self.ip_api+":"+self.port_api + \
-            "/api/orchestrator/register/basesreguladoras?notificada=false"
-        response = requests.get(url, headers)
+        response = self.rpa.get("http://"+self.ip_api+":"+self.port_api + \
+            "/api/orchestrator/register/basesreguladoras?notificada=false")
         if response and response.status_code == 200:
             json_dicti = json.loads(response.text)
 
@@ -355,7 +357,7 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
                         num_ugi += 1
                         bbrr_ugi.append(bbrr)
 
-                response = self.persist_regulatory_base(bbrr, False)
+                response = self.persist_regulatory_base(bbrr, True)
                 try:
                     if response.text:
                         json_dicti = json.loads(response.text)

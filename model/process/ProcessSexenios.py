@@ -2,6 +2,8 @@ import time
 import os
 from datetime import datetime
 import json
+from model.RPA import RPA
+from rpa_robot.ControllerRobot import ControllerRobot
 from rpa_robot.ControllerSettings import ControllerSettings
 from model.process.UtilsProcess import UtilsProcess
 import requests
@@ -47,6 +49,8 @@ class ProcessSexenios(ProcessCommand):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
         
+        cr = ControllerRobot()        
+        self.rpa:RPA = RPA(cr.robot.token)
 
     def execute(self):
         """
@@ -209,35 +213,38 @@ class ProcessSexenios(ProcessCommand):
                 self.log.completed = 90
 
                 self.notify_update("Subiendo informe al CDN...")
-                response = self.upload_file(doc_name)
+                url_cdn = cs.get_url_upload_cdn(self.ip_api, self.port_api)
+                response = self.upload_file(doc_name, url_cdn)
+                status_send = None
                 if response and response.status_code == 200:
-                    json_dicti = json.loads(response.text)
+                    upload_response = json.loads(response.text)
                     self.notify_update(
-                        "Fichero subido correctamente al CDN, url de descarga: "+json_dicti["url_cdn"])
-                    
+                        "Fichero subido correctamente al CDN, url de descarga: "+upload_response["url_cdn"])
+
                     config = cs.get_globals_settings(self.ip_api, self.port_api)
-                    status_send = None
+                    
                     if config:
                         json_dicti = json.loads(config)
                         if json_dicti: 
                             url = json_dicti['edma_host_servicios'] + '/editorcv/Sexenios/Notify'
-                            response = self.send_report(json_dicti["url_cdn"], researcherInfo[1], url)
-
+                            response = self.send_report(upload_response["url_cdn"], researcherInfo[1], url)
                             if response:
                                 status_send =response.status_code
                     
-                    if status_send == 200:
-                        self.notify_update("Informe notificado correctamente")
-                    else:
-                        self.notify_update("ERROR en la notificación del informe")
-                        self.log.state = 'ERROR'
-                    self.result = json_dicti["url_cdn"]
+                    self.result = upload_response["url_cdn"]
+
+                if status_send and status_send == 200:
+                    self.notify_update("Informe notificado correctamente")
+                else:
+                    self.notify_update("ERROR en la notificación del informe")
+                    self.log.state = "ERROR"
+                
                 
                 if os.path.exists(doc_name):
                     os.remove(doc_name)
             else:
                 self.notify_update('ERROR en la obtención de parámetros para la consulta a Hércules-EDMA.')
-                self.log.state = 'ERROR'
+                self.log.state = "ERROR"
 
         self.notify_update(
             'Proceso de generación de informe de sexenio finalizado.')
@@ -471,12 +478,13 @@ class ProcessSexenios(ProcessCommand):
             self.notify_update(
                 'Obteniendo la información individual de la lista de patentes.')
             for i in range(len(dataframe)):
-                patente = self.get_article(dataframe.iloc[i]['doc.value'])
+                patente = self.get_patent(dataframe.iloc[i]['doc.value'], edma)
                 if patente:
                     result.append(patente)
         return result
 
-    def get_articles(self, researcherInfo, period, authorship_order, edma:EDMA, max_article: int = 0) -> list:
+    def get_articles(self, researcherInfo, period, authorship_order, edma:EDMA, 
+    max_article: int = 0) -> list:
         """
         Método que obtiene la lista de artículos de un investigador.
         :param researcherInfo información del investigador
@@ -494,7 +502,7 @@ class ProcessSexenios(ProcessCommand):
                 'Obteniendo la información individual de la lista de artículos.')
             for i in range(len(dataframe_art)):
                 article = self.get_article(
-                    dataframe_art.iloc[i]['doc.value'])
+                    dataframe_art.iloc[i]['doc.value'], edma)
                 if article:
                     article.author_position = dataframe_art.iloc[i]['posicion.value']
                     result.append(article)
@@ -516,7 +524,7 @@ class ProcessSexenios(ProcessCommand):
                 'Obteniendo la información individual de la lista de trabajos presentados en congresos.')
             for i in range(len(dataframe_art)):
                 conference = self.get_conference(
-                    dataframe_art.iloc[i]['doc.value'])
+                    dataframe_art.iloc[i]['doc.value'], edma)
                 if conference:
                     result.append(conference)
         return result
@@ -906,21 +914,21 @@ class ProcessSexenios(ProcessCommand):
         document.save(doc_name)
         return doc_name
 
-    def upload_file(self, filename):
+    def upload_file(self, filename, url_cdn):
         """
         Método encargado de subir el informe al CDN.
         :param filename nombre del archivo
+        :para url_cdn url de CDN
         :return respuesta de la petición de subida al CDN.
         """
-        response = None        
-        url = "http://10.208.99.12/upload.php"
-        with open('./'+filename, 'rb') as f:
-            try:
-                files = [('file', (filename, f, 'application/docx'))]
-                response = requests.request("POST", url, headers={}, data={}, files=files)
-            except Exception as e:
-                print(str(e))
-                self.notify_update('Error en la subida del informe al CDN.')
-            
-            f.close()
+        response = None     
+        if url_cdn:   
+            with open('./'+filename, 'rb') as f:                
+                try:
+                    files = [('file', (filename, f, 'application/docx'))]
+                    response = self.rpa.post(url_cdn, data_body={}, files=files)
+                except Exception as e:
+                    print(str(e))
+                    self.notify_update('Error en la subida del informe al CDN.')            
+                f.close()
         return response

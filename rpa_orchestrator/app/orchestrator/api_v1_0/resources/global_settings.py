@@ -42,8 +42,6 @@ class GlobalSettingsResourceSchema(Schema):
     sgi_password = fields.Str()
     sgi_ip = fields.Str()
     sgi_port = fields.Int()
-    database_ip = fields.Str()
-    database_port = fields.Int()
     url_upload_cdn = fields.Str()
     url_release = fields.Str()
 

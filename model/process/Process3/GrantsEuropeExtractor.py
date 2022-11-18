@@ -5,8 +5,10 @@ from datetime import datetime
 
 from model.process.Process3.Execution_Model import Execution_Model
 from rpa_robot.ControllerSettings import ControllerSettings
+from rpa_robot.ControllerRobot import ControllerRobot
+from model.RPA import RPA
 
-LINK_GRANTS = r'https://ec.europa.eu/info/funding-tenders/opportunities/data/referenceData/grantsTenders.json' #europe_links
+LINK_GRANTS = r'https://ec.europa.eu/info/funding-tenders/opportunities/data/referenceData/grantsTenders.json' #europe_link
 LINK_TOPIC_DETAILS = r'https://ec.europa.eu/info/funding-tenders/opportunities/data/topicDetails/{}.json'
 LINK_CALL_FOR_GRANT = r'https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/{}' #europe_url
 cs = ControllerSettings()
@@ -17,9 +19,14 @@ class GrantsEuropeExtractor():
     """
 
     def __init__(self, server, port):
-        self.result = []
-        self.server = server
-        self.port = port
+        if (server == "" and port == ""):
+            self.result = []
+        else:
+            self.result = []
+            self.server = server
+            self.port = port
+            cr = ControllerRobot()
+            self.rpa = RPA(cr.robot.token)
 
     def get_grants_json(self):
         """
@@ -173,23 +180,22 @@ class GrantsEuropeExtractor():
         :return Devuelve un array con las convocatorias europeas. Si no hay ninguna devuelve None.
         """
         conf = cs.get_process_settings(self.server, self.port)
-        if 'europe_url' in conf and 'europe_links' in conf:
-            response = requests.get(conf['europe_links'])
-            if response.ok:
-                JSON = json.loads(response.content)
-                for item in JSON['fundingData']['GrantTenderObj']:
-                    dict_europe = {}
-                    if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and float(item['publicationDateLong'])/1000 >= time.time():
-                        dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
-                        dict_europe['url'] = conf['europe_url']+item['identifier'].lower()
-                        dict_europe['fecha_publicacion'] = time.localtime(float(item['publicationDateLong'])/1000)
-                        dict_europe['fecha_creacion'] = time.localtime(float(item['deadlineDatesLong'].pop())/1000)
-                        dict_europe['modelo_ejecucion'] = Execution_Model.SUBVENCION.value
-                        dict_europe['_from'] = "EUROPA2020"
-                        dict_europe['notificada'] = False
-                        self.result.append(dict_europe)
-                self.insert_database(self.result)
-                return self.result
+        response = requests.get(conf['europe_link'])
+        if response.ok:
+            JSON = json.loads(response.content)
+            for item in JSON['fundingData']['GrantTenderObj']:
+                dict_europe = {}
+                if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and float(item['publicationDateLong'])/1000 >= time.time():
+                    dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
+                    dict_europe['url'] = conf['europe_url']+item['identifier'].lower()
+                    dict_europe['fecha_publicacion'] = time.localtime(float(item['publicationDateLong'])/1000)
+                    dict_europe['fecha_creacion'] = time.localtime(float(item['deadlineDatesLong'].pop())/1000)
+                    dict_europe['modelo_ejecucion'] = Execution_Model.SUBVENCION.value
+                    dict_europe['_from'] = "EUROPA2020"
+                    dict_europe['notificada'] = False
+                    self.result.append(dict_europe)
+            self.insert_database(self.result)
+            return self.result
         return None
 
     def search_europe_date(self, start_date: str, end_date: str) -> list:
@@ -201,23 +207,22 @@ class GrantsEuropeExtractor():
         :return Devuelve un array con las convocatorias europeas. Si no hay ninguna devuelve None.
         """
         conf = cs.get_process_settings(self.server, self.port)
-        if 'europe_url' in conf and 'europe_links' in conf:
-            response = requests.get(conf['europe_links'])
-            if response.ok:
-                JSON = json.loads(response.content)
-                for item in JSON['fundingData']['GrantTenderObj']:
-                    dict_europe = {}
-                    if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and start_date != None and end_date != None and (float(item['publicationDateLong'])/1000 >= time.mktime(time.strptime(start_date, '%Y-%m-%d'))) and (float(item['publicationDateLong'])/1000 < time.mktime(time.strptime(end_date, '%Y-%m-%d'))):
-                        dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
-                        dict_europe['url'] = conf['europe_url']+item['identifier'].lower()
-                        dict_europe['fecha_publicacion'] = float(item['publicationDateLong'])/1000
-                        dict_europe['fecha_creacion'] = float(item['deadlineDatesLong'].pop())/1000
-                        dict_europe['modelo_ejecucion'] = Execution_Model.SUBVENCION.value
-                        dict_europe['_from'] = "EUROPA2020"
-                        dict_europe['notificada'] = False
-                        self.result.append(dict_europe)
-                self.insert_database(self.result)
-                return self.result
+        response = requests.get(conf['europe_link'])
+        if response.ok:
+            JSON = json.loads(response.content)
+            for item in JSON['fundingData']['GrantTenderObj']:
+                dict_europe = {}
+                if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and start_date != None and end_date != None and (float(item['publicationDateLong'])/1000 >= time.mktime(time.strptime(start_date, '%Y-%m-%d'))) and (float(item['publicationDateLong'])/1000 < time.mktime(time.strptime(end_date, '%Y-%m-%d'))):
+                    dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
+                    dict_europe['url'] = conf['europe_url']+item['identifier'].lower()
+                    dict_europe['fecha_publicacion'] = float(item['publicationDateLong'])/1000
+                    dict_europe['fecha_creacion'] = float(item['deadlineDatesLong'].pop())/1000
+                    dict_europe['modelo_ejecucion'] = Execution_Model.SUBVENCION.value
+                    dict_europe['_from'] = "EUROPA2020"
+                    dict_europe['notificada'] = False
+                    self.result.append(dict_europe)
+            self.insert_database(self.result)
+            return self.result
         return None
 
     def insert_database(self, array: list) -> None:
@@ -230,7 +235,7 @@ class GrantsEuropeExtractor():
         new_array = []
         for i in array:
             bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + i['url']
-            res = requests.get(bbdd_url)
+            res = self.rpa.get(bbdd_url)
             if not res.ok:
                 new_array.append(i)
         if new_array:
@@ -239,7 +244,7 @@ class GrantsEuropeExtractor():
             }
             payload = json.dumps(new_array)
             bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias"
-            response = requests.post(bbdd_url, headers=headers, data=payload)
+            response = self.rpa.post(bbdd_url, headers=headers, data=payload)
 
     def change_notify(self) -> None:
         """
@@ -253,11 +258,11 @@ class GrantsEuropeExtractor():
         payload = "{ \"notificada\": true }"
         for i in self.result:
             bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + i['url']
-            response = requests.get(bbdd_url)
+            response = self.rpa.get(bbdd_url)
             JSON = json.loads(response.content)
             if JSON[0]['notificada'] == False:
                 bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatoria/" + str(JSON[0]['id'])
-                patch = requests.patch(bbdd_url,headers=headers,data=payload)
+                patch = self.rpa.patch(bbdd_url,data=payload)
 
     def search_europe_date_file(self, path: str, start_date: str, end_date: str) -> list:
         """
@@ -267,10 +272,7 @@ class GrantsEuropeExtractor():
         :param end_date str: Fecha del fin de la búsqueda.
         :return Devuelve un array con las convocatorias europeas. Si no hay ninguna devuelve None.
         """
-        url = ""
-        conf = cs.get_process_settings(self.server, self.port)
-        if 'europe_url' in conf and 'europe_links' in conf:
-            url = conf['europe_url']+item['identifier'].lower()
+
         file = open(path, "r",encoding='ISO-8859-1')
         response = file.read()
         file.close()
@@ -280,7 +282,7 @@ class GrantsEuropeExtractor():
                 dict_europe = {}
                 if item['type'] == 1 and item['status']['abbreviation'] in ['Open', 'Forthcoming'] and start_date != None and end_date != None and (float(item['publicationDateLong'])/1000 >= time.mktime(time.strptime(start_date, '%Y-%m-%d'))) and (float(item['publicationDateLong'])/1000 < time.mktime(time.strptime(end_date, '%Y-%m-%d'))):
                     dict_europe['titulo'] = item['identifier'] #A petición quitamos el título y dejamos sólamente el identificador. item['title']
-                    dict_europe['url'] = url
+                    dict_europe['url'] = LINK_CALL_FOR_GRANT.format(item['identifier'].lower())
                     dict_europe['fecha_publicacion'] = float(item['publicationDateLong'])/1000
                     dict_europe['fecha_creacion'] = float(item['deadlineDatesLong'].pop())/1000
                     dict_europe['modelo_ejecucion'] = Execution_Model.SUBVENCION.value

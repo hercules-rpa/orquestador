@@ -2,13 +2,13 @@
    {
       "type":"text",
       "name":"user",
-      "label":"User",
+      "label":"Usuario",
       "validation":"email"
    },
    {
       "type":"password",
       "name":"password",
-      "label":"Password"
+      "label":"Contraseña"
    },
    {
       "type":"text",
@@ -19,14 +19,14 @@
    {
       "type":"number",
       "name":"port",
-      "label":"Port"
+      "label":"Puerto"
    },
    {
       "type":"group",
       "name":"receivers",
       "validation":"min:1,length",
       "repeatable":true,
-      "add-label":"+ Add receiver",
+      "add-label":"+ Destinatario",
       "value":[
          {
             
@@ -42,7 +42,7 @@
          {
             "type":"text",
             "name":"receiver",
-            "label":"Receiver",
+            "label":"Destinatario",
             "validation":"email"
          },
          {

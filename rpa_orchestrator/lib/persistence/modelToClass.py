@@ -76,7 +76,7 @@ def toFile(files_db):
 def toGlobal_Settings(global_settings_db):
     global_settings = []
     for i in global_settings_db:
-        gs = GlobalSettings(edma_host_sparql=i.edma_host_sparql,edma_host_servicios=i.edma_host_servicios,edma_port_sparql=i.edma_port_sparql,sgi_user=i.sgi_user,sgi_password=i.sgi_password,sgi_ip=i.sgi_ip,sgi_port=i.sgi_port,datbase_ip=i.database_ip,database_port=i.database_port,url_upload_cdn=i.url_upload_cdn,url_release=i.url_release)
+        gs = GlobalSettings(edma_host_sparql=i.edma_host_sparql,edma_host_servicios=i.edma_host_servicios,edma_port_sparql=i.edma_port_sparql,sgi_user=i.sgi_user,sgi_password=i.sgi_password,sgi_ip=i.sgi_ip,sgi_port=i.sgi_port,url_upload_cdn=i.url_upload_cdn,url_release=i.url_release)
         global_settings.append(gs)
     return global_settings
 

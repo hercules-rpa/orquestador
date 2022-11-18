@@ -33,20 +33,6 @@ class ControllerSettings(metaclass=Singleton):
                 result = response.text
         return result
 
-    def get_database_configuration(self, ip_api, port_api) -> tuple:
-        """
-        Método que obtiene los parámetros de configuración globales.
-        :param ip_api dirección IP de la API
-        :param port_api puerto de la API
-        :return tuple tupla que contiene (ip,puerto) de acceso a la base de datos
-        """
-        response = self.get_globals_settings(ip_api, port_api)
-        if response:
-            dict = json.loads(response)
-            if dict:
-                return (str(dict['database_ip']), str(dict['database_port']))
-        return None
-
     def get_url_upload_cdn(self, ip_api, port_api) -> str:
         result = None
         if ip_api and port_api:

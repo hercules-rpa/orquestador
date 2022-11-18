@@ -231,39 +231,43 @@ class ProcessAcreditaciones(ProcessSexenios):
             self.log.completed = 90
 
             self.notify_update("Subiendo informe al CDN...")
-            response = self.upload_file(doc_name)
+            url_cdn = cs.get_url_upload_cdn(self.ip_api, self.port_api)
+            response = self.upload_file(doc_name, url_cdn)
+            
+            status_send = None
+
             if response and response.status_code == 200:
-                json_dicti = json.loads(response.text)
+                upload_response = json.loads(response.text)
                 self.notify_update(
-                    "Fichero subido correctamente, url de descarga: "+json_dicti["url_cdn"])
+                    "Fichero subido correctamente, url de descarga: "+upload_response["url_cdn"])
 
                 config = cs.get_globals_settings(self.ip_api, self.port_api)
-                status_send = None
                 if config:
                     json_dicti = json.loads(config)
                     if json_dicti:
                         url = json_dicti['edma_host_servicios'] + \
                             '/editorcv/Sexenios/Notify'
                         response = self.send_report(
-                            json_dicti["url_cdn"], researcherInfo[1], url)
+                            upload_response["url_cdn"], researcherInfo[1], url)
 
                         if response:
                             status_send = response.status_code
+                        self.result = upload_response["url_cdn"]
 
-                if status_send == 200:
-                    self.notify_update("Informe notificado correctamente")
-                else:
-                    self.notify_update(
+            if status_send == 200:
+                self.notify_update("Informe notificado correctamente")
+            else:
+                self.notify_update(
                             "ERROR en la notificación del informe")
-                    self.log.state = 'ERROR'
-                self.result = json_dicti["url_cdn"]
+                self.log.state = "ERROR"
+                
 
             if os.path.exists(doc_name):
                 os.remove(doc_name)
         else:
             self.notify_update(
                 'ERROR en la obtención de parámetros para la consulta a Hércules-EDMA.')
-            self.log.state = 'ERROR'
+            self.log.state = "ERROR"
 
         self.notify_update(
             'Proceso de generación de informe de acreditación finalizado.')

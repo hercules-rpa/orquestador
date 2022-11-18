@@ -1,4 +1,5 @@
 from datetime import datetime
+from model.RPA import RPA
 from rpa_robot.ControllerSettings import ControllerSettings
 from rpa_robot.ControllerRobot import ControllerRobot
 import json
@@ -27,14 +28,14 @@ class Singleton(type):
 class RSController(metaclass=Singleton):
     def __init__(self, ip_api = None, port_api = None):
         self.ip = ip_api
-        self.port = port_api
-        self.url_api = PROTOCOL+self.ip+":"+str(self.port)
+        self.port = str(port_api)
+        if self.ip and self.port: #Si es Nulo es el orquestador haciendo uso de funciones de aqui para cargar el perfil base solicitado por API
+            self.url_api = PROTOCOL+self.ip+":"+str(self.port)
+            self.rpa_controller = RPA(controllerRobot.robot.token)
         
-
-
     def get_all_calificacion(self):
         calificaciones_df = pd.DataFrame({"invId":[],"areaId":[],"rating":[]})
-        r = requests.get(self.url_api+URL_CALIFICACION_AREA)
+        r = self.rpa_controller.get(self.url_api+URL_CALIFICACION_AREA)
         if r.status_code == 200:
             calificaciones = json.loads(r.text)
             for calificacion in calificaciones:
@@ -58,7 +59,7 @@ class RSController(metaclass=Singleton):
             #Columnas. idInv, area, calificacion
             while areaTematica:
                 try:
-                    r = requests.get(self.url_api+URL_CALIFICACION_AREA+"?idinvestigador="+str(idinvestigador)+"&idarea="+str(areaTematica.id))
+                    r = self.rpa_controller.get(self.url_api+URL_CALIFICACION_AREA+"?idinvestigador="+str(idinvestigador)+"&idarea="+str(areaTematica.id))
                 except Exception as e:
                     print("No se pudo conectar con ",self.url_api)
                     print(e)
@@ -115,7 +116,7 @@ class RSController(metaclass=Singleton):
         """
         headers = { 'Content-Type': 'application/json' }
         body_json = {'iduser':idInvestigador, 'idrobot': idrobot, 'token': token}
-        r = requests.post(self.url_api+URL_GENERATE_TOKEN, headers=headers, data = json.dumps(body_json))
+        r = self.rpa_controller.post(service=self.url_api+URL_GENERATE_TOKEN, data_body = json.dumps(body_json))
         if r.status_code == 200:
             return json.loads(r.text)['access_token']
         return None
@@ -171,7 +172,7 @@ class RSController(metaclass=Singleton):
             idref = ed.get_personaref(investigador.email)
             if not idref:
                 return False
-            r = sgi.get_solicitudes("solicitanteRef=="+str(idref))
+            r = sgi.get_forms("solicitanteRef=="+str(idref))
             areas = []
             body = {}
             index = {}
@@ -212,14 +213,14 @@ class RSController(metaclass=Singleton):
         :return: dataframe de investigador/es
         """
         if id:
-            r = requests.get(self.url_api+URL_INVESTIGADOR+"/"+str(id))
+            r = self.rpa_controller.get(self.url_api+URL_INVESTIGADOR+"/"+str(id))
             if r.status_code == 200:
                 investigador_json = json.loads(r.text)[0]
                 inv = p4.Investigador(id=id,nombre=investigador_json['nombre'],email=investigador_json['email'], perfil=investigador_json['perfil'])
                 return inv
             return None
         else:
-            r = requests.get(self.url_api+URL_INVESTIGADOR)
+            r = self.rpa_controller.get(self.url_api+URL_INVESTIGADOR)
             if r.status_code == 200:
                 investigadores_json = json.loads(r.text)
                 df_inv = pd.json_normalize(investigadores_json)
@@ -247,11 +248,11 @@ class RSController(metaclass=Singleton):
         :param convocatatoria objeto de la clase convocatoria
         return None en caso de que haya sido notificado y objeto investigador en caso de que no haya sido notificado
         """
-        r = requests.get(self.url_api+URL_INVESTIGADOR+"?email="+emailinvestigador)
+        r = self.rpa_controller.get(self.url_api+URL_INVESTIGADOR+"?email="+emailinvestigador)
         if r.status_code == 200:
             investigador = json.loads(r.text)[0]
             investigador = p4.Investigador(id=investigador['id'],nombre=investigador['nombre'], email=investigador['email'], perfil=investigador['perfil'])
-            r = requests.get(self.url_api+URL_NOTIFICACION_INVESTIGADOR+"?idinvestigador="+str(investigador.id)+"&idconvocatoriasgi="+str(convocatoria.id))
+            r = self.rpa_controller.get(self.url_api+URL_NOTIFICACION_INVESTIGADOR+"?idinvestigador="+str(investigador.id)+"&idconvocatoriasgi="+str(convocatoria.id))
             if r.status_code == 200:
                 return None
             return investigador
@@ -264,7 +265,7 @@ class RSController(metaclass=Singleton):
         :param id id del área
         :return objeto de la clase AreaTematica
         """
-        r = requests.get(self.url_api+URL_AREA_TEMATICA+"/"+str(id))
+        r = self.rpa_controller.get(self.url_api+URL_AREA_TEMATICA+"/"+str(id))
         if r.status_code == 200:
             areatematica_dict = json.loads(r.text)
             areatematica_dict = areatematica_dict
@@ -279,7 +280,7 @@ class RSController(metaclass=Singleton):
         :param fuente origen del área temática (fuente de extracción)
         :return objeto de la clase AreaTematica
         """
-        r = requests.get(self.url_api+URL_AREA_TEMATICA+"?nombre="+nombre+"&fuente="+fuente)
+        r = self.rpa_controller.get(self.url_api+URL_AREA_TEMATICA+"?nombre="+nombre+"&fuente="+fuente)
         if r.status_code == 200:
             areatematica_dict = json.loads(r.text)
             areatematica_dict = areatematica_dict[0]
@@ -299,7 +300,7 @@ class RSController(metaclass=Singleton):
         investigadores = []
         for index, row in df.iterrows():
             investigadores.append({'nombre':row['nombre'], 'email':row['email'], 'perfil':False})
-        x = requests.post(self.url_api+URL_INVESTIGADOR, data = json.dumps(investigadores))
+        x = self.rpa_controller.post(service=self.url_api+URL_INVESTIGADOR, data_body = json.dumps(investigadores))
 
 
     def insert_areatematica_interno(self, areatematica:p4.AreaTematica, fuente:str):
@@ -318,7 +319,7 @@ class RSController(metaclass=Singleton):
                 "id": areatematica.areaPadre.id if areatematica.areaPadre else None
             }
         }]
-        x = requests.post(self.url_api+URL_AREA_TEMATICA, data = json.dumps(json_insert))
+        x = self.rpa_controller.post(service=self.url_api+URL_AREA_TEMATICA, data_body = json.dumps(json_insert))
         if x.status_code == 201:
             return json.loads(x.text)['id']
         return None
@@ -335,8 +336,7 @@ class RSController(metaclass=Singleton):
         data_json['idconvocatoriasgi'] = convocatoria.id
         data_json['idinvestigador'] = investigador.id
         data_json['feedback'] = False
-        x = requests.post(self.url_api+URL_NOTIFICACION_INVESTIGADOR, headers={ 'Content-Type': 'application/json' }, data = json.dumps([data_json]))
-        print(x.text)
+        x = self.rpa_controller.post(service=self.url_api+URL_NOTIFICACION_INVESTIGADOR, data_body = json.dumps([data_json]))
         if x.status_code == 201:
             return True
         return False

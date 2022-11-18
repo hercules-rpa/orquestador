@@ -1,5 +1,7 @@
 from model.process.Process3.Adapter_Call import Adapter_Call
 from model.process.Process3.GrantsEuropeExtractor import GrantsEuropeExtractor
+from model.RPA import RPA
+from rpa_robot.ControllerRobot import ControllerRobot
 
 import time
 import requests
@@ -15,6 +17,8 @@ class Adapter_Europe(Adapter_Call):
         self.result = []
         self.server = server
         self.port = port
+        cr = ControllerRobot()
+        self.rpa = RPA(cr.robot.token)
 
     def search(self, *args: list) -> None:
         """
@@ -24,7 +28,7 @@ class Adapter_Europe(Adapter_Call):
         :return None.
         """
         self.result = []
-        self.result = self.europe.search_europe(self.server)
+        self.result = self.europe.search_europe()
         
     
     def search_date(self, start_date: str, end_date: str, *args: list) -> None:
@@ -47,7 +51,7 @@ class Adapter_Europe(Adapter_Call):
         """
         output = ""
         bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?notificada=false&_from=EUROPA2020"
-        response = requests.get(bbdd_url)
+        response = self.rpa.get(bbdd_url)
         if response.ok:
             array = json.loads(response.text)
             output += "Número Total de convocatorias: " + str(len(array))

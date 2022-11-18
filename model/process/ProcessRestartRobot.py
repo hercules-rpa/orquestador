@@ -28,7 +28,6 @@ class ProcessRestartRobot(ProcessCommand):
         start = time.time()
         self.log.start_log(start)
         if self.parameters['update']:
-            self.update_log("Se procede a actualizar el robot",True)
             cs = ControllerSettings()
             settings_response = cs.get_globals_settings(self.ip_api, self.port_api)
             if settings_response:
@@ -38,7 +37,7 @@ class ProcessRestartRobot(ProcessCommand):
                 else: 
                     self.update_log("Update Process Failed", True)
 
-        self.update_log("Se procede al reinicio del robot y se reinicia",True)
+        self.update_log("Se obtiene la lina de comando con la que se ejecutó el robot y se reinicia",True)
         end_time = time.time()
         self.state = pstatus.FINISHED
         self.log.end_log(end_time)

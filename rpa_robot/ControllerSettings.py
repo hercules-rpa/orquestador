@@ -31,6 +31,8 @@ class ControllerSettings(metaclass=Singleton):
             response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:
                 result = response.text
+                print(response)
+                print(result)
         return result
 
     def get_url_upload_cdn(self, ip_api, port_api) -> str:

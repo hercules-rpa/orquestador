@@ -12,7 +12,7 @@ class RPA():
         :param service endpoint al que consulta
         :return Response respuesta obtenida
         """
-        header = {'Token_Robot': self.token}
+        header = {'Authorization': self.token}
         response = requests.request("GET", service, headers=header)
         return response
 
@@ -25,7 +25,7 @@ class RPA():
         :param list files: lista de ficheros
         :return Response respuesta obtenida
         """
-        headers = {'Token_Robot': self.token, 'Content-Type': 'application/json'}
+        headers = {'Authorization': self.token, 'Content-Type': 'application/json'}
         response = requests.post(service, headers=headers, data=data_body, files=files)
         return response
     
@@ -37,6 +37,6 @@ class RPA():
         :param {} data: JSON con el cambio para el método patch
         :return Response respuesta obtenida
         """
-        headers = {'Token_Robot': self.token, 'Content-Type': 'application/json'}
+        headers = {'Authorization': self.token, 'Content-Type': 'application/json'}
         response = requests.patch(service, headers=headers, data=data_body)
         return response

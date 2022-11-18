@@ -926,7 +926,7 @@ class ProcessSexenios(ProcessCommand):
             with open('./'+filename, 'rb') as f:                
                 try:
                     files = [('file', (filename, f, 'application/docx'))]
-                    response = self.rpa.post(url_cdn, data_body={}, files=files)
+                    response = requests.post(url_cdn+"/upload.php", headers={}, data={}, files=files)
                 except Exception as e:
                     print(str(e))
                     self.notify_update('Error en la subida del informe al CDN.')            

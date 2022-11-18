@@ -13,19 +13,12 @@ def token_required(func):
     def decorated_function(*args, **kwargs):
         token = None
         orch = Orchestrator()
-        if 'Token_Robot' in request.headers:
+        if 'Authorization' in request.headers:
             try:
-                token = request.headers['Token_Robot']
-                if token == "":
-                    return Response(json.dumps({"msg": "Token_Robot no presente"}), status=401, mimetype='application/json')
-            except Exception as e:
-                print(str(e))
-                return Response(json.dumps({"msg": "Token_Robot no válido"}), status=403, mimetype='application/json')       
-            for robot in orch.robot_list.values():
-                if robot[0].token == token:
-                    return func(*args, **kwargs)
-        elif 'Authorization' in request.headers:
-            try:
+                token = request.headers['Authorization']
+                for robot in orch.robot_list.values():
+                    if robot[0].token == token:
+                        return func(*args, **kwargs)
                 token = request.headers['Authorization'].split(" ")[1]
                 if token == "":
                     return Response(json.dumps({"msg": "Authorization token no presente"}), status=401, mimetype='application/json')

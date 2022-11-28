@@ -190,7 +190,7 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
 
             print(payload)
 
-            response = self.rpa.post("http://"+self.ip_api+":"+self.port_api + \
+            response = self.rpa.post(self.ip_api+":"+self.port_api + \
                 "/api/orchestrator/register/basesreguladoras", payload)
             print(response.text)
             return response
@@ -201,7 +201,7 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
         :return list lista de bases reguladoras no notificadas
         """
         result = []
-        response = self.rpa.get("http://"+self.ip_api+":"+self.port_api + \
+        response = self.rpa.get(self.ip_api+":"+self.port_api + \
             "/api/orchestrator/register/basesreguladoras?notificada=false")
         if response and response.status_code == 200:
             json_dicti = json.loads(response.text)
@@ -217,7 +217,7 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
                 "No se han obtenido bases reguladoras no enviadas en procesos anteriores.")
         return result
 
-    def end_process(self, state_ugi, state_otri, bbrr_ugi: list, bbrr_otri: list, conf: tuple = None):
+    def end_process(self, state_ugi, state_otri, bbrr_ugi: list, bbrr_otri: list):
         """
         Método que realiza las acciones de finalización del proceso.
         :param state_ugi código de error de envío de correo electrónico de la UGI
@@ -228,10 +228,7 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
         error: bool = False
         msgerror: str = ""
 
-        url_update = None
-        if conf:
-            url_update = "http://"+conf[0]+":"+conf[1] + \
-                "/api/orchestrator/register/basereguladora"
+        url_update = self.ip_api + ':'+ self.port_api + "/api/orchestrator/register/basereguladora"
 
         if state_otri == "ERROR" and state_ugi == "ERROR":
             error = True

@@ -76,7 +76,7 @@ class BDNS:
         with open('convocatorias.csv', 'r', encoding='ISO-8859-1') as csvfile:
             lines = csv.DictReader(csvfile, delimiter=',')
             for row in lines:
-                bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + self.conf['bdns_url'] + "GE/es/convocatoria/" + row['Código BDNS']
+                bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + self.conf['bdns_url'] + "GE/es/convocatoria/" + row['Código BDNS']
                 response = self.rpa.get(bbdd_url)
                 if self.search_name_csv(row['Título de la convocatoria'].lower(), args) and response.status_code == 404:
                     key = row['Código BDNS']
@@ -242,11 +242,8 @@ class BDNS:
         :param array list: Array con las convocatorias a insertar.
         """
         self.msg_notify = ""
-        headers = {
-        'Content-Type': 'application/json'
-        }
         payload = json.dumps(array)
-        bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias"
+        bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatorias"
         response = self.rpa.post(bbdd_url, payload)
         self.msg_notify = str(response.status_code) + " --- " + response.text
 

@@ -34,7 +34,6 @@ class GrantsEuropeExtractor():
         """
 
         response = requests.get(LINK_GRANTS, timeout=10)
-        # print response
         print(response)
         if response.status_code == 200:
         
@@ -165,7 +164,7 @@ class GrantsEuropeExtractor():
             'Content-Type': 'application/json'
             }
             payload = json.dumps(array)
-            bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/process/convocatoria"
+            bbdd_url = self.server + ":" + self.port +"/api/orchestrator/process/convocatoria"
             response = requests.post(bbdd_url, headers=headers, data=payload)
             print(response.status_code)
             print(response.text)
@@ -234,7 +233,7 @@ class GrantsEuropeExtractor():
         """
         new_array = []
         for i in array:
-            bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + i['url']
+            bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + i['url']
             res = self.rpa.get(bbdd_url)
             if not res.ok:
                 new_array.append(i)
@@ -243,7 +242,7 @@ class GrantsEuropeExtractor():
             'Content-Type': 'application/json'
             }
             payload = json.dumps(new_array)
-            bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias"
+            bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatorias"
             response = self.rpa.post(bbdd_url, headers=headers, data=payload)
 
     def change_notify(self) -> None:
@@ -257,11 +256,11 @@ class GrantsEuropeExtractor():
         }
         payload = "{ \"notificada\": true }"
         for i in self.result:
-            bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + i['url']
+            bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?url=" + i['url']
             response = self.rpa.get(bbdd_url)
             JSON = json.loads(response.content)
             if JSON[0]['notificada'] == False:
-                bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatoria/" + str(JSON[0]['id'])
+                bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatoria/" + str(JSON[0]['id'])
                 patch = self.rpa.patch(bbdd_url,data=payload)
 
     def search_europe_date_file(self, path: str, start_date: str, end_date: str) -> list:

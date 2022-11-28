@@ -39,35 +39,18 @@ class CommissionCienciasSociales(Commission):
         :return El objeto AccreditationEvaluationCienciasSociales con los resultados del criterio de la comisión de Ciencias Sociales.
         """
         eval, assessment, art_n1, art_n2 = self.get_criterio_catedra_A(scientific_production, evaluation.criterion.num_art_A, evaluation.criterion.num_t1_t2_A, evaluation.criterion.min_percent)
-        evaluation.observation += self.create_observations_catedra(evaluation, scientific_production)
-        if eval and assessment == 'A':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            return evaluation
-        eval, assessment, art_n1, art_n2 = self.get_criterio_catedra_B_C_D(scientific_production, evaluation.criterion.num_art_BC, evaluation.criterion.num_t1_t2_A, evaluation.criterion.min_percent)
-        if eval and assessment == 'B':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            evaluation.observation = self.create_observations_catedra(evaluation, scientific_production)
-            return assessment
-        if eval and assessment == 'C':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            evaluation.observation = self.create_observations_catedra(evaluation, scientific_production)
-            return assessment
-        if eval and assessment == 'D':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            evaluation.observation = self.create_observations_catedra(evaluation, scientific_production)
-            return assessment
+        evaluation.observation = self.create_observations_catedra(evaluation, scientific_production)
+        if not eval:
+            eval, assessment, art_n1, art_n2 = self.get_criterio_catedra_B_C_D(scientific_production, evaluation.criterion.num_art_BC, evaluation.criterion.num_t1_BC, evaluation.criterion.num_t2_BC, evaluation.criterion.min_percent)
+            evaluation.observation += self.create_observations_catedra(evaluation, scientific_production)
+
+        if eval:
+                evaluation.positive = eval
+                evaluation.publications_n1 = art_n1
+                evaluation.publications_n2 = art_n2
+                evaluation.assessment = assessment        
+        return evaluation
+        
 
     def get_titularidad(self, scientific_production, evaluation:AccreditationEvaluationCienciasSociales) -> AccreditationEvaluationCienciasSociales:
         """
@@ -78,35 +61,18 @@ class CommissionCienciasSociales(Commission):
         :return El objeto AccreditationEvaluationCienciasSociales con los resultados del criterio de la comisión de Ciencias Sociales.
         """
         eval, assessment, art_n1, art_n2 = self.get_criterion_titularidad_A(scientific_production, evaluation.criterion.num_art_A, evaluation.criterion.num_t1_t2_A, evaluation.criterion.min_percent)
-        evaluation.observation += self.create_observations_titularidad(evaluation, scientific_production)
-        if eval and assessment == 'A':
+        evaluation.observation = self.create_observations_titularidad(evaluation, scientific_production)
+        if not eval:
+            eval, assessment, art_n1, art_n2 = self.get_criterion_titularidad_B_C_D(scientific_production, evaluation.criterion.num_art_BC, evaluation.criterion.num_t1_BC, evaluation.criterion.num_t2_BC, evaluation.criterion.min_percent)
+            evaluation.observation += self.create_observations_titularidad(evaluation, scientific_production)
+        
+        if eval:
             evaluation.positive = eval
             evaluation.publications_n1 = art_n1
             evaluation.publications_n2 = art_n2
             evaluation.assessment = assessment
-            return evaluation
-        eval, assessment, art_n1, art_n2 = self.get_criterion_titularidad_B_C_D(scientific_production, evaluation.criterion.num_art_BC, evaluation.criterion.num_t1_BC, evaluation.criterion.num_t2_BC, evaluation.criterion.min_percent)
-        evaluation.observation += self.create_observations_titularidad(evaluation, scientific_production)
-        if eval and assessment == 'B':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            return assessment
-        if eval and assessment == 'C':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            evaluation.observation = self.create_observations_titularidad(evaluation, scientific_production)
-            return assessment
-        if eval and assessment == 'D':
-            evaluation.positive = eval
-            evaluation.publications_n1 = art_n1
-            evaluation.publications_n2 = art_n2
-            evaluation.assessment = assessment
-            evaluation.observation = self.create_observations_titularidad(evaluation, scientific_production)
-            return assessment
+        return evaluation
+        
 
     def get_criterio_catedra_A(self, scientific_production: list, num_publications : int, 
     num_n1_n2 : int, min_percent : int) -> tuple([bool, str, [], []]):

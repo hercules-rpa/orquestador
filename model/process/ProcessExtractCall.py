@@ -49,7 +49,7 @@ class ProcessExtractCall(ProcessCommand):
             self.update_log(
                 "Detectamos que el proceso quiere buscar directamente una BDNS. Comprobamos primero si está en BBDD.", True)
             if self.ip_api and self.port_api:
-                bbdd_url = "http://" + self.ip_api + ":" + self.port_api + \
+                bbdd_url = self.ip_api + ":" + self.port_api + \
                     "/api/orchestrator/register/convocatoria?url=https://www.pap.hacienda.gob.es/bdnstrans/GE/es/convocatoria/" + \
                     self.parameters['bdns']
                 response = self.rpa.get(bbdd_url)
@@ -138,7 +138,7 @@ class ProcessExtractCall(ProcessCommand):
         """
         Método para la inyección de convocatorias en el sistema SGI que no estén marcadas como inyectadas en la base de datos interna.
         """
-        url = "http://" + self.ip_api + ":" + self.port_api + \
+        url = self.ip_api + ":" + self.port_api + \
             "/api/orchestrator/register/convocatorias?notificada=false&_from=BDNS"
         response = RPA(cr.robot.token).get(url)
         if response.ok:
@@ -175,9 +175,7 @@ class ProcessExtractCall(ProcessCommand):
                         "No se ha podido inyectar en el SGI la convocatoria de la BDNS con título: " + item['titulo'])
 
                 if res:
-                    headers = {'Content-Type': 'application/json'}
-                    url_update = "http://" + \
-                        self.ip_api + ":" + self.port_api + \
+                    url_update = self.ip_api + ":" + self.port_api + \
                         "/api/orchestrator/register/convocatoria/" + \
                         str(item['id'])
                     RPA(cr.robot.token).patch(url_update, '{"notificada":true, "id_sgi":' + str(json.loads(res)['id']) + '}')

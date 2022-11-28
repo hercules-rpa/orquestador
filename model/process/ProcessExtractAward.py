@@ -138,7 +138,7 @@ class ProcessExtractAward(ProcessCommand):
         :return int El código de la BDNS que tiene asignado. Sino, 0.
         """
         #titulo_codificado = titulo.split(' ', 1)[1].encode("gb2312").decode('utf_8')
-        bbdd_url = "http://" + self.ip_api + ":" + self.port_api + "/api/orchestrator/register/convocatorias?_from=BDNS&id_sgi=" + str(id_sgi_convocatoria) + "&entidad_convocante=AGENCIA ESTATAL DE INVESTIGACIÓN"
+        bbdd_url = self.ip_api + ":" + self.port_api + "/api/orchestrator/register/convocatorias?_from=BDNS&id_sgi=" + str(id_sgi_convocatoria) + "&entidad_convocante=AGENCIA ESTATAL DE INVESTIGACIÓN"
         response = requests.get(bbdd_url)
         if response.ok:
             return int(json.loads(response.text)[0]['url'].split("/")[-1])    

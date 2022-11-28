@@ -133,7 +133,7 @@ class CommissionOtrasEspecialidadesSanitarias(Commission):
         """
         arts_authorship = []
         arts_authorship_t1 = []
-        assessment = ''
+        result_assessment = 'D'
         result = False
         if len(scientific_production) >= criterion.min_arts:
             authorship_result, arts_authorship = self.get_criterion_authorship(scientific_production, criterion.num_authorship)
@@ -142,11 +142,9 @@ class CommissionOtrasEspecialidadesSanitarias(Commission):
                     if article.get_tertile() == 1:
                         arts_authorship_t1.append(article)
                 if len(arts_authorship_t1) >= criterion.num_authorship_t1:
-                    assessment = assessment
+                    result_assessment = assessment
                     result = True
-        else:
-            assessment = 'D'
-        return result, assessment, arts_authorship, arts_authorship_t1
+        return result, result_assessment, arts_authorship, arts_authorship_t1
 
     def get_criterion_authorship(self, scientific_production, num_publications):
         """

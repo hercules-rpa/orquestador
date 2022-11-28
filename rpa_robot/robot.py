@@ -28,7 +28,7 @@ UUID = uuid.uuid1()
 
 class Robot(ListenerMsg, ListenerLog, ListenerProcess):
 
-    def __init__(self, id, name, address, registrations, ip_api='localhost', port_api=5000, frontend = None, online=False, connected=datetime.now().timestamp(), features=[pkg.key for pkg in pkg_resources.working_set], state="Iddle", process_running=None, process_list=[]):
+    def __init__(self, id, name, address, registrations, ip_api='http://localhost', port_api=5000, frontend = None, online=False, connected=datetime.now().timestamp(), features=[pkg.key for pkg in pkg_resources.working_set], state="Iddle", process_running=None, process_list=[]):
         self.id = str(id)
         self.name = str(name)
         self.address = str(address)

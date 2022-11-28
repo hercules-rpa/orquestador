@@ -21,7 +21,6 @@ NAME = "Sistema de Recomendación"
 DESCRIPTION = "Proceso que llama al sistema de recomendación híbrido. (Filtro Colaborativo, Contenido y Grafo Colaboración)"
 REQUIREMENTS = ['pandas']
 ID = ProcessID.RECOMMENDATION.value
-PROTOCOL = "http://"
 URL_PROFILE = "/#/p/profilerecommendation/"
 URL_SGI = "/csp/convocatoria/"
 URL_FEEDBACK = "/#/p/feedback/"
@@ -32,7 +31,7 @@ class ProcessRecommendationSystem(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api = None, port_api = None):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
-        self.url_api = PROTOCOL+self.ip_api+":"+str(self.port_api)
+        self.url_api = self.ip_api+":"+str(self.port_api)
         
     def execute(self):
         """

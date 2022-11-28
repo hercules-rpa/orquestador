@@ -129,7 +129,7 @@ class CommissionBiologiaCelularYMolecular(Commission):
         :param AccreditationEvaluationBiologCelularMolecular eval: Objeto AccreditationEvaluationBiologCelularMolecular con la observación del criterio.
         :return Cadena con el resultado de la observación realizada.
         """
-        observation = 'La valoración alcanzada podría ser ' + ("positiva" if eval.positive else "negativa") + ' porque se han obtenido los siguientes resultados: \n' + \
+        observation = 'La valoración B podría ser ' + ("positiva" if eval.positive else "negativa") + ' porque se han obtenido los siguientes resultados: \n' + \
                 'Número de publicaciones obtenidas necesarias: ' + str(eval.criterion.min_art_100) + ' obtenidas: ' + str(len(eval.scientific_production)) + '\n' + \
                 'T1, necesarias: ' + str(eval.criterion.num_t1_100) + ' obtenidas: '        
         if eval.publications_t1:
@@ -153,12 +153,12 @@ class CommissionBiologiaCelularYMolecular(Commission):
         :param AccreditationEvaluationBiologCelularMolecular eval: Objeto AccreditationEvaluationBiologCelularMolecular con la observación del criterio.
         :return Cadena con el resultado de la observación realizada.
         """
-        observation = 'La valoración alcanzada es: ' + str(eval.positive) + ' porque se han obtenido los siguientes resultados: \n' + \
+        observation = 'La valoración ' + str(eval.assessment) + ' podría ser: ' + ("positiva" if eval.positive else "negativa") + ' porque se han obtenido los siguientes resultados: \n' + \
             'Número de publicaciones obtenidas necesarias: ' + str(eval.criterion.min_art_100) + \
-            '-' + str(eval.criterion.num_authorship_75) + ' obtenidas: ' + \
+            '-' + str(eval.criterion.min_art_75) + ', obtenidas: ' + \
             str(len(eval.scientific_production)) + '\n' + \
             'T1, necesarias: ' + str(eval.criterion.num_t1_100) + '-' + \
-            str(eval.criterion.num_t1_75) + ' obtenidas: '
+            str(eval.criterion.num_t1_75) + ', obtenidas: '
         
         if eval.publications_t1:
             observation += str(len(eval.publications_t1)) + '\n'
@@ -166,7 +166,7 @@ class CommissionBiologiaCelularYMolecular(Commission):
             observation += '0 \n'
 
         observation += 'Autoría preferente, necesarias: ' + \
-            str(eval.criterion.num_authorship_100) + '-' + str(eval.criterion.num_authorship_75) + ' obtenidas: '
+            str(eval.criterion.num_authorship_100) + '-' + str(eval.criterion.num_authorship_75) + ', obtenidas: '
         if eval.publications_authorship:
             observation += str(len(eval.publications_authorship)) + '\n'
         else:

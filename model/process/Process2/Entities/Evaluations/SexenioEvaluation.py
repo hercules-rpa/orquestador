@@ -34,6 +34,7 @@ class SexenioEvaluation(Evaluation):
         principal.
         :return list retorna una lista con la producción sustitutoria
         """
+        result = None
         if self.scientific_production and self.main_production:
             result = self.scientific_production
             for art in self.main_production:

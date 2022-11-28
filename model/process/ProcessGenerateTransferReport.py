@@ -318,7 +318,7 @@ class ProcessGenerateTransferReport(ProcessCommand):
                     "exito": success
                 }])
             
-            response = self.rpa.post('http://' + self.ip_api + ':' + self.port_api + '/api/orchestrator/register/ejecuciones_boletines',
+            response = self.rpa.post(self.ip_api + ':' + self.port_api + '/api/orchestrator/register/ejecuciones_boletines',
             payload)
 
         except:
@@ -335,8 +335,7 @@ class ProcessGenerateTransferReport(ProcessCommand):
             'Obteniendo datos relacionados con la última ejecución del proceso.')
         result = None
         try:
-            response = self.rpa.get(
-                'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/register/ultima_ejecucion_boletin')
+            response = self.rpa.get(self.ip_api+':'+self.port_api+'/api/orchestrator/register/ultima_ejecucion_boletin')
             if response and response.status_code != 200:
                 result = response
         except:

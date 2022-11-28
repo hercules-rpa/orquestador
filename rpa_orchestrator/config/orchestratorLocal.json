@@ -1,0 +1,10 @@
+{
+    "DB-PERSISTENCE":{
+        "user": "postgres",
+        "password": "docker",
+        "host": "localhost",
+        "port": "5432",
+        "database": "rpa"
+
+    }
+}

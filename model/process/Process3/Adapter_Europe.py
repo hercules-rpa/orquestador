@@ -4,7 +4,6 @@ from model.RPA import RPA
 from rpa_robot.ControllerRobot import ControllerRobot
 
 import time
-import requests
 import json
 
 
@@ -50,7 +49,7 @@ class Adapter_Europe(Adapter_Call):
         :return Devuelve en formato string un log de cómo se ha ejecutado el proceso hasta el momento que se invoca
         """
         output = ""
-        bbdd_url = "http://" + self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?notificada=false&_from=EUROPA2020"
+        bbdd_url = self.server + ":" + self.port +"/api/orchestrator/register/convocatorias?notificada=false&_from=EUROPA2020"
         response = self.rpa.get(bbdd_url)
         if response.ok:
             array = json.loads(response.text)

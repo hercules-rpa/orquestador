@@ -36,9 +36,9 @@ class CommissionQuimica(Commission):
         """
         Método general de evaluación para la cátedra de un investigador.
 
-        :param [] produccion_científica: listado de artículos de un investigador.
-        :param EvaluacionAcreditacionQuimica evaluacion: Objeto EvaluacionAcreditacion que contiene el resultado del criterio de la comisión de Química.
-        :return objeto EvaluacionAcreditacion con los resultados del criterio de la comisión de Química.
+        :param [] scientific_production: listado de artículos de un investigador.
+        :param AccreditationEvaluationQuimica evaluation: Objeto que contiene el resultado del criterio de la comisión de Química.
+        :return objeto AccreditationEvaluationQuimica con los resultados del criterio de la comisión de Química.
         """
         eval, arts_t1, arts_first_author = self.evaluate_criterion(scientific_production, evaluation.criterion.min_publications, evaluation.criterion.t1_publications, evaluation.criterion.t1_ap_publications, evaluation.criterion.max_year)
         evaluation.positive = eval
@@ -62,32 +62,32 @@ class CommissionQuimica(Commission):
         evaluacion.observation += self.create_observaciones_critero(evaluacion)
         return evaluacion
 
-    def evaluate_criterion(self, scientific_production, num_publicaciones, t1_publicaciones, primer_autor, max_anios) -> tuple([bool, [],  []]):
+    def evaluate_criterion(self, scientific_production, num_publications, t1_publicaciones, number_first_author, max_anios) -> tuple([bool, [],  []]):
         """
         Método para comprobar cuántos artículos pertenecen al T1 y si cumple con el mínimo establecido de artículos.
 
         :param [] scientific_production: listado de artículos de un investigador.
         :param int num_publicaciones: número de publicaciones necesarias para cumplir el criterio.
         :param int t1_publicaciones: número de publicaciones necesarias en el tercil 1.
-        :param int primer_autor: número de publicaciones en las que tienes que ser primer autor.
+        :param int number_first_author: número de publicaciones en las que tienes que ser primer autor.
         :param int max_anios: número máximo de años permitidos en las publicaciones.
         :return dupla formada por un booleano si se cumple con el criterio, una lista de artículos seleccionados en el tercil 1 y una lista de artículos en los que el investigador es primer autor.
         """
         arts_t1 = []
         arts_first_author = []
         result = False
-        primer_autor = 0
-        if len(scientific_production) >= num_publicaciones:
+        
+        if len(scientific_production) >= num_publications:
             for art in scientific_production:
                 articulo:RO = art
                 # Ponemos el atributo posición pero no sé realmente si ese determina la posición en el artículo que estamos consultando.
                 if articulo.get_tertile() == 1 and (datetime.date.today().year - int(articulo.get_year())) <= max_anios and articulo.author_position == 1:
                     arts_first_author.append(articulo)
-                    primer_autor += 1
+                
                 if articulo.get_tertile() == 1 and (datetime.date.today().year - int(articulo.get_year())) <= max_anios:
                     arts_t1.append(articulo)
 
-            if arts_t1 and arts_first_author and len(arts_t1) >= num_publicaciones and len(arts_t1) >= t1_publicaciones and len(arts_first_author) >= primer_autor:
+            if arts_t1 and arts_first_author and len(arts_t1) >= num_publications and len(arts_t1) >= t1_publicaciones and len(arts_first_author) >= number_first_author:
                 result = True
 
         return (result, arts_t1, arts_first_author)

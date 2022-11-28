@@ -27,7 +27,7 @@ class ControllerSettings(metaclass=Singleton):
         """
         result = None
         if ip_api and port_api:
-            url = 'http://'+ip_api+':'+port_api+'/api/orchestrator/global_settings'
+            url = ip_api+':'+port_api+'/api/orchestrator/global_settings'
             response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:
                 result = response.text
@@ -38,7 +38,7 @@ class ControllerSettings(metaclass=Singleton):
     def get_url_upload_cdn(self, ip_api, port_api) -> str:
         result = None
         if ip_api and port_api:
-            response = RPA(self.cr.robot.token).get('http://'+ip_api+':'+port_api+'/api/orchestrator/cdn/url')
+            response = RPA(self.cr.robot.token).get(ip_api+':'+port_api+'/api/orchestrator/cdn/url')
             if response and response.status_code == 200:
                 dict = json.loads(response.text)
                 if dict:
@@ -55,7 +55,7 @@ class ControllerSettings(metaclass=Singleton):
         """
         result = None
         if ip_api and port_api:
-            url = 'http://'+ip_api+':'+port_api+'/api/orchestrator/process_settings'
+            url = ip_api+':'+port_api+'/api/orchestrator/process_settings'
             response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:
                 result = json.loads(response.text)

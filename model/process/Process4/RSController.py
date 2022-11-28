@@ -268,7 +268,7 @@ class RSController(metaclass=Singleton):
         r = self.rpa_controller.get(self.url_api+URL_AREA_TEMATICA+"/"+str(id))
         if r.status_code == 200:
             areatematica_dict = json.loads(r.text)
-            areatematica_dict = areatematica_dict
+            areatematica_dict = areatematica_dict[0]
             areatematica = p4.AreaTematica(id = areatematica_dict['id'], nombre= areatematica_dict['nombre'], descripcion=areatematica_dict['descripcion'])
             return areatematica
         return None

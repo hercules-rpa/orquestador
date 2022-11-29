@@ -11,10 +11,10 @@
 
     "ROBOT-SETTING":{
         "id":               "robot3",
-        "name":             "RobotTestJose",
+        "name":             "Robot",
         "address":          "Murcia",
-        "registrations":    "Ronda Sur",
-        "ip_api": "rpa-api-desa.um.es",
+        "registrations":    "RS",
+        "ip_api": 	    "https://rpa-api-desa.um.es",
         "port_api":        "80",
         "frontend":        "https://rpa-desa.um.es"
     }

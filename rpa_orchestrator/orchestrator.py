@@ -173,9 +173,8 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
                       robot.process_running['name'], msgtype=MSG_TYPE.PROCESS_EXEC)
         self.db.dump([event])
         self.dbbi.dump_robot(robot, self.id, self.name, self.company)
-        self.event_list.append(event)
-        log_orch.info("Robot ", robot.id, " va a ejecutar",
-              robot.process_running['name'])
+        self.event_list.append(event) 
+        log_orch.info("Robot " + robot.id + " va a ejecutar" + robot.process_running['name'])
 
     async def handle_msgPendingProcess(self, msg):
         robot = JSONDecoder().decode(json.dumps(msg['ROBOT']))
@@ -183,8 +182,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
 
     async def handle_msgLog(self, msg):
         log = JSONDecoder().decode(json.dumps(msg['LOG']))
-        log_orch.info("Robot ", log.id_robot, " ha mandado el log (",
-              log.id, ") del proceso", log.process_name)
+        log_orch.info("Robot " + log.id_robot + " ha mandado el log (" + log.id+ ") del proceso"+ log.process_name)
         self.__update_log(log)
 
     async def handle_msgUpdateInfo(self, msg):
@@ -209,8 +207,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         else:
             event = Event(body="Robot ID"+msg["FROM"]+" crea proceso por AMQP. id schedule "+str(
                 result), msgtype=MSG_TYPE.PROCESS_CREATE)
-            log_orch.info("El robot ", msg['FROM'],
-                  " manda a crear el proceso id_schedule ", result)
+            log_orch.info("El robot " + msg['FROM']+" manda a crear el proceso id_schedule "+result)
         self.db.dump([event])
 
     async def handle_msgNotify(self, msg):
@@ -286,8 +283,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         log_memory.write_log(self.pathlog_store)
         self.db.dump([log_memory])
         if(log_memory.finished):
-            log_orch.info("La ejecucion del proceso ", log.process_name,
-                  " con id log ", log.id, " ha terminado")
+            log_orch.info("La ejecucion del proceso "+ log.process_name+" con id log "+log.id+ " ha terminado")
             event = Event(body="Robot "+self.robot_list[log.id_robot][0].name+" ha terminado de ejecutar el proceso "+str(
                 self.get_process_name_by_id(log.id_process)), msgtype=MSG_TYPE.PROCESS_EXEC)
             self.db.dump([event])
@@ -690,7 +686,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
     def run(self):
         asyncio.run(self.__send_message(messages.ROUTE_ROBOT +
                     "general", json.dumps(messages.MSG_START_ORCH)))
-        log_orch.info("Se inicia el orquestador. " +  datetime.now().strftime("%m/%d/%Y %H:%M:%S"))
+        log_orch.info("Se inicia el orquestador. " +  datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         while True:
             for (key, value) in self.robot_list.items():
                 if((datetime.now() - value[1]).seconds > TIME_KEEP_ALIVE and value[0].online):

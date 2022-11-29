@@ -19,12 +19,32 @@ import platform
 import psutil
 import time
 import uuid
+import logging
+import os
 from uuid import getnode as get_mac
 import traceback
 
 TIME_WAIT_INIT = 60
 TIME_KEEP_ALIVE = 60
 UUID = uuid.uuid1()
+
+log_robot = logging.getLogger(__name__)
+log_robot.setLevel(logging.INFO)
+if not os.path.exists(os.path.join(os.path.dirname(os.path.realpath(__file__)),'log')):
+    os.makedirs(os.path.join(os.path.dirname(os.path.realpath(__file__)),'log'))
+log_file_handler = logging.FileHandler(filename=os.path.join(os.path.dirname(os.path.realpath(__file__)),'log/General.log'), encoding='utf-8')
+log_file_handler.setLevel(logging.INFO)
+log_file_handler.mode = 'w'
+
+infoHandler = logging.StreamHandler(sys.stdout)
+infoHandler.setLevel(logging.INFO)
+
+errorHandler = logging.StreamHandler(sys.stderr)
+errorHandler.setLevel(logging.ERROR)
+
+log_robot.addHandler(infoHandler)
+log_robot.addHandler(errorHandler)
+log_robot.addHandler(log_file_handler)
 
 class Robot(ListenerMsg, ListenerLog, ListenerProcess):
 
@@ -67,15 +87,15 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
                             self.ip_api, self.port_api)
             return instance
         except Exception as e:
-            print("El proceso no ha podido ser instanciado")
-            print(traceback.format_exc())
-            print(str(e))
+            log_robot.error("El proceso no ha podido ser instanciado")
+            log_robot.error(traceback.format_exc())
+            log_robot.error(str(e))
             return None
 
     def __execute_process(self, process):
         self.state = "RUNNING "+process.name
         self.process_running = process
-        print("El robot va a ejecutar el proceso: ", process.name)
+        log_robot.info("El robot va a ejecutar el proceso: " + process.name)
         asyncio.run((self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(
             messages.MSG_EXEC_PROCESS, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))))
         process.add_log_listener(self)
@@ -163,7 +183,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
             messages.ROUTE_ORCHESTRATOR, json.dumps(dict(msg))))
 
     async def notify_msg(self, msg):
-        print("llega: ", msg)
+        log_robot.info("Recibimos: " + str(msg))
         await self.handle_msg(msg)
 
     async def handle_msg(self, msg):
@@ -187,13 +207,13 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
             await self.handle_msgUpdateInfo(msg)
     
     async def handle_msgInit(self, msg):
-        print("Conexion establecida")
+        log_robot.info("Conexion establecida")
         global time_keep
         time_keep = datetime.now()
         self.online = True
 
     async def handle_msgStartOrch(self, mgs):
-        print("Orquestador conectado")
+        log_robot.info("Orquestador conectado")
         await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_INIT_ROBOT, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
         await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_KEEP_ALIVE, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
 
@@ -201,13 +221,13 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         process = msg['PROCESS']
         process_instance = self.__instance_process(process)
         if process_instance:
-            print("El robot almacena el proceso: ", process_instance.name,
-                ' en la cola, tiene prioridad: ', process_instance.priority)
+            log_robot.info("El robot almacena el proceso: "+ process_instance.name+
+                ' en la cola, tiene prioridad: '+ process_instance.priority)
             self.process_list.append(process_instance)
             self.process_list.sort(key=self.__sort_by_priority)
             await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_PENDING_PROCESS, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
         else:
-            print("El robot elimina el proceso")
+            log_robot.info("El robot elimina el proceso")
             await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_UPDATE_INFO, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
 
     async def handle_msgUpdateInfo(self, msg):
@@ -229,10 +249,10 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         id_schedule = msg['SCHEDULE']
         process = self.__remove_process(id_schedule)
         if(process):
-            print("Proceso eliminado")
+            log_robot.info("Proceso eliminado")
             await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_UPDATE_INFO, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
         else:
-            print("Se ha intentado eliminar un proceso que no existe")
+            log_robot.info("Se ha intentado eliminar un proceso que no existe")
             await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_UPDATE_INFO, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))
 
     def run(self):
@@ -240,13 +260,13 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         global time_keep
         time_orch = datetime.now()
         time_seconds = 30
-        print("STARTING CONNECTION")
+        log_robot.info("Comenzamos la conexión con el orquestador")
         if(self.ip_address == None):
             try:
                 self.ip_address = json.loads(requests.get(
-                    'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').text)['ip']
+                    self.ip_api+':'+self.port_api+'/api/orchestrator/getip').text)['ip']
             except:
-                print("Connection exception")
+                log_robot.error("Connection exception")
         asyncio.run(self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(
             messages.MSG_INIT_ROBOT, **({"ROBOT": json.loads(JSONEncoder().encode(self))})))))
         while (play):
@@ -258,10 +278,9 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
                 if(self.ip_address == None):
                     try:
                         self.ip_address = json.loads(requests.get(
-                            'http://'+self.ip_api+':'+self.port_api+'/api/orchestrator/getip').text)['ip']
+                            self.ip_api+':'+self.port_api+'/api/orchestrator/getip').text)['ip']
                     except:
-                        print("Connection exception")
-                print("sending init")
+                        log_robot.error("Connection exception.")
 
                 asyncio.run(self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(
                     messages.MSG_INIT_ROBOT, **({"ROBOT": json.loads(JSONEncoder().encode(self))})))))
@@ -269,7 +288,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
                 time_keep = datetime.now()
             elif(self.online):
                 if ((datetime.now() - time_keep).seconds > TIME_KEEP_ALIVE):
-                    print("Mandamos Keep Alive ", datetime.now())
+                    log_robot.info("Mandamos Keep Alive "+ datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
                     asyncio.run(self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(
                         messages.MSG_KEEP_ALIVE, **({"ROBOT": json.loads(JSONEncoder().encode(self))})))))
                     time_keep = datetime.now()

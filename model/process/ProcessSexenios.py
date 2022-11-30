@@ -2,8 +2,6 @@ import time
 import os
 from datetime import datetime
 import json
-from model.RPA import RPA
-from rpa_robot.ControllerRobot import ControllerRobot
 from rpa_robot.ControllerSettings import ControllerSettings
 from model.process.UtilsProcess import UtilsProcess
 import requests
@@ -48,9 +46,6 @@ class ProcessSexenios(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api=None, port_api=None):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
-        
-        cr = ControllerRobot()        
-        self.rpa:RPA = RPA(cr.robot.token)
 
     def execute(self):
         """

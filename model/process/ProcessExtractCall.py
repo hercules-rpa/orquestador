@@ -1,5 +1,4 @@
 from rpa_robot.ControllerSettings import ControllerSettings
-from rpa_robot.ControllerRobot import ControllerRobot
 from model.process.Process3.Execution_Model import Execution_Model
 from model.process.Process3.Adapter_BDNS import Adapter_BDNS
 from model.process.Process3.Adapter_Europe import Adapter_Europe
@@ -7,7 +6,6 @@ from model.process.ProcessCommand import ProcessCommand
 from model.process.ProcessCommand import Pstatus as pstatus
 from model.process.ProcessCommand import ProcessID
 from model.process.UtilsProcess import UtilsProcess
-from model.RPA import RPA
 
 import datetime
 import time
@@ -18,7 +16,6 @@ DESCRIPTION = "Proceso que extrae las últimas convocatorias de las fuentes de d
 REQUIREMENTS = ['rpaframework', 'playwright', 'selenium', 'bs4']
 ID = ProcessID.EXTRACT_CALLS.value
 cs = ControllerSettings()
-cr = ControllerRobot()
 
 class ProcessExtractCall(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api=None, port_api=None):
@@ -140,7 +137,7 @@ class ProcessExtractCall(ProcessCommand):
         """
         url = self.ip_api + ":" + self.port_api + \
             "/api/orchestrator/register/convocatorias?notificada=false&_from=BDNS"
-        response = RPA(cr.robot.token).get(url)
+        response = self.rpa.get(url)
         if response.ok:
             self.update_log("Encontramos que hay una colección de la BDNS para inyectar en el SGI.", True)
             sgi = cs.get_sgi(self.ip_api, self.port_api)
@@ -178,7 +175,7 @@ class ProcessExtractCall(ProcessCommand):
                     url_update = self.ip_api + ":" + self.port_api + \
                         "/api/orchestrator/register/convocatoria/" + \
                         str(item['id'])
-                    RPA(cr.robot.token).patch(url_update, '{"notificada":true, "id_sgi":' + str(json.loads(res)['id']) + '}')
+                    self.rpa.patch(url_update, '{"notificada":true, "id_sgi":' + str(json.loads(res)['id']) + '}')
                     self.update_log(
                         "Actualizamos nuestra base de datos con la notificación", True)
 

@@ -14,7 +14,7 @@ from rpa_orchestrator.app.orchestrator.api_v1_0.middleware import token_required
 
 UPLOAD_FOLDER = 'epic_orchestrator/files/'
 orch = Orchestrator()
-CDN_URL = 'http://'+orch.cdn_url
+CDN_URL = orch.cdn_url
 
 file_v1_0_bp = Blueprint('file_v1_0_bp', __name__)
 api = Api(file_v1_0_bp)
@@ -53,7 +53,6 @@ class FileRequestSchema(Schema):
 
 
 class FilesResource(MethodResource,Resource):
-    @token_required
     @doc(description='Obtiene el listado de los ficheros del sistema', tags=['Files'])
     @marshal_with(FileSchema(many=True))  # marshalling with marshmallow library
     def get(self):
@@ -72,7 +71,6 @@ class FilesResource(MethodResource,Resource):
             result.append(resp)
         return Response(json.dumps(result), status=200, mimetype='application/json')
 
-    @token_required
     @doc(description='Notificación de fichero nuevo desde el CDN', tags=['Files'])
     @use_kwargs(FileRequestSchema, location=('json'))
     @marshal_with(FileSchema)
@@ -96,7 +94,6 @@ class FilesResource(MethodResource,Resource):
             abort(404, description="Error no information file was found")
 
 class FileResource(MethodResource,Resource):
-    @token_required
     @doc(description='Información de fichero', tags=['Files'],params={'file_id': 
             {
                 'description': 'id del fichero',
@@ -111,11 +108,16 @@ class FileResource(MethodResource,Resource):
         file = orch.get_file(file_id)
         download = request.args.get("download") in ['True', 'true']
         
-        if download:
-            return redirect(urljoin(file.get_url_cdn))
+        
         if not file:
             abort(404, description="Resource not found")
+
+
         resp = file.__dict__.copy()
+
+        if download:
+            return redirect(urljoin(file.get_url_cdn(),"",allow_fragments=False))
+
         resp['id'] = file.id
         resp['filename'] = file.name
         resp['name'] = file.get_name()
@@ -124,8 +126,6 @@ class FileResource(MethodResource,Resource):
         return Response(json.dumps(resp), status=200, mimetype='application/json')
         
 class CDNURLResource(MethodResource,Resource):
-    #HACER EL DELETE
-    @token_required
     @doc(description='Obtención de la URL del CDN', tags=['Files'])
     @marshal_with(URLCDNSchema)  # marshalling with marshmallow library 
     def get(self):

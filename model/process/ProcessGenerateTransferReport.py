@@ -32,10 +32,6 @@ class ProcessGenerateTransferReport(ProcessCommand):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
 
-        cr = ControllerRobot()        
-        self.rpa:RPA = RPA(cr.robot.token)
-
-
     def extract_articles(self, start_date, end_date):
         """
         Método encargado de la extracción de los artículos.

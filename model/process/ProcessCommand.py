@@ -70,8 +70,10 @@ class ProcessCommand(ABC):
         self.ip_api = ip_api
         self.port_api = port_api      
         self.result = None
-        cr = ControllerRobot() 
-        self.rpa:RPA = RPA(cr.robot.token)
+        self.cr = ControllerRobot() 
+        self.rpa:RPA = None
+        if self.cr.robot:
+            self.rpa:RPA = RPA(self.cr.robot.token)
 
     def add_log_listener(self, listener):
         self.log.add_log_listener(listener)

@@ -27,7 +27,8 @@ class BDNS:
             self.port = port
             self.conf = cs.get_process_settings(self.server, self.port)
             cr = ControllerRobot()
-            self.rpa = RPA(cr.robot.token)
+            if cr.robot:
+                self.rpa = RPA(cr.robot.token)
 
     def search_with_date(self, dD: time, dH: time, *args: str) -> dict:
         """

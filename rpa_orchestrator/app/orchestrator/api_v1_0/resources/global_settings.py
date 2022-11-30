@@ -15,7 +15,6 @@ from model.GlobalSettings              import GlobalSettings
 from datetime                           import datetime
 from rpa_orchestrator.ControllerProcess    import ControllerProcess
 from flask import redirect
-from urllib.parse import urljoin
 from marshmallow                        import Schema, fields
 from flask_apispec                      import marshal_with,doc
 from flask_apispec.views                import MethodResource

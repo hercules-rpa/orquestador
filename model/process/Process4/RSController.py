@@ -16,7 +16,6 @@ URL_GENERATE_TOKEN = "/api/orchestrator/register/token"
 
 cs = ControllerSettings()
 controllerRobot = ControllerRobot()
-PROTOCOL = "http://"
 
 class Singleton(type):
     _instances = {}
@@ -30,8 +29,10 @@ class RSController(metaclass=Singleton):
         self.ip = ip_api
         self.port = str(port_api)
         if self.ip and self.port: #Si es Nulo es el orquestador haciendo uso de funciones de aqui para cargar el perfil base solicitado por API
-            self.url_api = PROTOCOL+self.ip+":"+str(self.port)
-            self.rpa_controller = RPA(controllerRobot.robot.token)
+            self.url_api = self.ip+":"+str(self.port)
+            self.rpa_controller = None
+            if controllerRobot.robot:
+                self.rpa_controller = RPA(controllerRobot.robot.token)
         
     def get_all_calificacion(self):
         calificaciones_df = pd.DataFrame({"invId":[],"areaId":[],"rating":[]})
@@ -268,7 +269,6 @@ class RSController(metaclass=Singleton):
         r = self.rpa_controller.get(self.url_api+URL_AREA_TEMATICA+"/"+str(id))
         if r.status_code == 200:
             areatematica_dict = json.loads(r.text)
-            areatematica_dict = areatematica_dict[0]
             areatematica = p4.AreaTematica(id = areatematica_dict['id'], nombre= areatematica_dict['nombre'], descripcion=areatematica_dict['descripcion'])
             return areatematica
         return None

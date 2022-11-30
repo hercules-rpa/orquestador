@@ -17,7 +17,9 @@ class Adapter_Europe(Adapter_Call):
         self.server = server
         self.port = port
         cr = ControllerRobot()
-        self.rpa = RPA(cr.robot.token)
+        self.rpa:RPA = None
+        if cr.robot:
+            self.rpa= RPA(cr.robot.token)
 
     def search(self, *args: list) -> None:
         """

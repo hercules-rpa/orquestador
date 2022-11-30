@@ -26,18 +26,16 @@ class ControllerSettings(metaclass=Singleton):
         :return respuesta recibida
         """
         result = None
-        if ip_api and port_api:
+        if ip_api and port_api and self.cr.robot:
             url = ip_api+':'+port_api+'/api/orchestrator/global_settings'
             response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:
                 result = response.text
-                print(response)
-                print(result)
         return result
 
     def get_url_upload_cdn(self, ip_api, port_api) -> str:
         result = None
-        if ip_api and port_api:
+        if ip_api and port_api and self.cr.robot:
             response = RPA(self.cr.robot.token).get(ip_api+':'+port_api+'/api/orchestrator/cdn/url')
             if response and response.status_code == 200:
                 dict = json.loads(response.text)
@@ -54,7 +52,7 @@ class ControllerSettings(metaclass=Singleton):
         :return dict diccionario con parámetros recibidos
         """
         result = None
-        if ip_api and port_api:
+        if ip_api and port_api and self.cr.robot:
             url = ip_api+':'+port_api+'/api/orchestrator/process_settings'
             response = RPA(self.cr.robot.token).get(url)
             if response and response.status_code == 200:

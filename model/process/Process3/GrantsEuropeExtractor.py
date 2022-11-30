@@ -26,7 +26,9 @@ class GrantsEuropeExtractor():
             self.server = server
             self.port = port
             cr = ControllerRobot()
-            self.rpa = RPA(cr.robot.token)
+            self.rpa:RPA = None
+            if cr.robot:
+                self.rpa = RPA(cr.robot.token)
 
     def get_grants_json(self):
         """

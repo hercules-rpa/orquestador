@@ -222,7 +222,7 @@ class Robot(ListenerMsg, ListenerLog, ListenerProcess):
         process_instance = self.__instance_process(process)
         if process_instance:
             log_robot.info("El robot almacena el proceso: "+ process_instance.name+
-                ' en la cola, tiene prioridad: '+ process_instance.priority)
+                ' en la cola, tiene prioridad: '+ str(process_instance.priority))
             self.process_list.append(process_instance)
             self.process_list.sort(key=self.__sort_by_priority)
             await self.__send_message(messages.ROUTE_ORCHESTRATOR, json.dumps(dict(messages.MSG_PENDING_PROCESS, **({"ROBOT": json.loads(JSONEncoder().encode(self))}))))

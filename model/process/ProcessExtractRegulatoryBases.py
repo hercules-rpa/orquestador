@@ -2,8 +2,6 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
-from model.RPA import RPA
-from rpa_robot.ControllerRobot import ControllerRobot
 from rpa_robot.ControllerSettings import ControllerSettings
 from model.process.Process3.BaseReguladora import RegulatoryBase
 from model.process.ProcessCommand import ProcessCommand
@@ -25,8 +23,6 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
     def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api=None, port_api=None):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
-        cr = ControllerRobot()        
-        self.rpa:RPA = RPA(cr.robot.token)
 
     def get_nodes(self, params, delete_file: bool = True) -> list:
         """

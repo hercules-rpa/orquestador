@@ -138,7 +138,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         robot = JSONDecoder().decode(json.dumps(msg['ROBOT']))
         self.robot_list[robot.id] = (robot, datetime.now())
         robot.online = True
-        log_orch.info("Robot "+ robot.name + " con id " + robot.id +
+        log_orch.info("Robot "+ robot.name + " con id " + str(robot.id) +
               " inicia la conexion con el orquestador. " + robot.address)
         event = Event(body="Robot "+robot.name +
                       " inicia la conexion con el orquestador. ", msgtype=MSG_TYPE.CONNECTION)
@@ -164,7 +164,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
             self.dbbi.dump_robot_performance(
                 robot, self.id, self.name, self.company)
             self.db.dump([event])
-            log_orch.info("Keep Alive " + robot.id + " " + datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+            log_orch.info("Keep Alive " + str(robot.id) + " " + datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
 
     async def handle_msgExecProcess(self, msg):
         robot = JSONDecoder().decode(json.dumps(msg['ROBOT']))
@@ -174,7 +174,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         self.db.dump([event])
         self.dbbi.dump_robot(robot, self.id, self.name, self.company)
         self.event_list.append(event) 
-        log_orch.info("Robot " + robot.id + " va a ejecutar" + robot.process_running['name'])
+        log_orch.info("Robot " + str(robot.id) + " va a ejecutar" + robot.process_running['name'])
 
     async def handle_msgPendingProcess(self, msg):
         robot = JSONDecoder().decode(json.dumps(msg['ROBOT']))
@@ -182,7 +182,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
 
     async def handle_msgLog(self, msg):
         log = JSONDecoder().decode(json.dumps(msg['LOG']))
-        log_orch.info("Robot " + log.id_robot + " ha mandado el log (" + log.id+ ") del proceso"+ log.process_name)
+        log_orch.info("Robot " + str(log.id_robot) + " ha mandado el log (" + str(log.id)+ ") del proceso"+ log.process_name)
         self.__update_log(log)
 
     async def handle_msgUpdateInfo(self, msg):
@@ -283,7 +283,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         log_memory.write_log(self.pathlog_store)
         self.db.dump([log_memory])
         if(log_memory.finished):
-            log_orch.info("La ejecucion del proceso "+ log.process_name+" con id log "+log.id+ " ha terminado")
+            log_orch.info("La ejecucion del proceso "+ log.process_name+" con id log "+str(log.id)+ " ha terminado")
             event = Event(body="Robot "+self.robot_list[log.id_robot][0].name+" ha terminado de ejecutar el proceso "+str(
                 self.get_process_name_by_id(log.id_process)), msgtype=MSG_TYPE.PROCESS_EXEC)
             self.db.dump([event])

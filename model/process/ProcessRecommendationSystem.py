@@ -39,7 +39,6 @@ class ProcessRecommendationSystem(ProcessCommand):
         """
         global rsController
         rsController = RSController(self.ip_api, self.port_api)
-        print(self.parameters)
         self.log.state = "OK"
         self.state = pstatus.RUNNING
         self.log.start_log(time.time())
@@ -195,6 +194,8 @@ class ProcessRecommendationSystem(ProcessCommand):
         investigadores_solicitud = pd.DataFrame({"nombre": [], "email": []})
         for solicitud in solicitudes:
             inv = self.__get_investigador_sgi(solicitud['solicitanteRef'])
+            if not inv:
+                continue
             row = [inv.nombre, inv.email]
             investigadores_solicitud.loc[len(investigadores_solicitud)] = row
             # investigadores_solicitud.append(self.__get_investigador_sgi(solicitud['solicitanteRef']).email)

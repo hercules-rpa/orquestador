@@ -24,7 +24,7 @@
            {
               "type":"text",
               "name":"receiver",
-              "label":"Destinatario",
+              "label":"Destinatarios",
               "validation":"email"
            }
         ]

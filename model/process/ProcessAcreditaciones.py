@@ -56,221 +56,224 @@ class ProcessAcreditaciones(ProcessSexenios):
         self.notify_update('Obteniendo la comisión seleccionada.')
         commission: Commission = self.get_commission(
             self.parameters['comision'])
-
-        self.notify_update('Obteniendo el tipo de acreditación.')
-        accreditation = self.get_accreditation(
-            self.parameters['tipo_acreditacion'])
-        if commission.id == "21":
-            try:
-                if 'categoria_acreditacion' in self.parameters:
-                    if self.parameters['categoria_acreditacion']:
-                        accreditation.category = AccreditationCategory(
-                            int(self.parameters['categoria_acreditacion']))
-                else:
+        if commission:
+            self.notify_update('Obteniendo el tipo de acreditación.')
+            accreditation = self.get_accreditation(
+                self.parameters['tipo_acreditacion'])
+            if commission.id == "21":
+                try:
+                    if 'categoria_acreditacion' in self.parameters:
+                        if self.parameters['categoria_acreditacion']:
+                            accreditation.category = AccreditationCategory(
+                                int(self.parameters['categoria_acreditacion']))
+                    else:
+                        self.notify_update(
+                            'ERROR no ha sido posible obtener la categoría de la acreditación, el proceso finalizará.')
+                        self.log.state = "ERROR"
+                        self.log.end_log(time.time())
+                        self.state = pstatus.FINISHED
+                        return
+                except Exception as e:
+                    print(e)
                     self.notify_update(
-                        'ERROR no ha sido posible obtener la categoría de la acreditación, el proceso finalizará.')
+                        'ERROR al obtener la categoría de la acreditación')
                     self.log.state = "ERROR"
                     self.log.end_log(time.time())
                     self.state = pstatus.FINISHED
                     return
-            except Exception as e:
-                print(e)
+
+            if not accreditation:
                 self.notify_update(
-                    'ERROR al obtener la categoría de la acreditación')
+                    'ERROR al obtener el tipo de acreditación.')
                 self.log.state = "ERROR"
                 self.log.end_log(time.time())
                 self.state = pstatus.FINISHED
                 return
 
-        if not accreditation:
             self.notify_update(
-                'ERROR al obtener el tipo de acreditación.')
-            self.log.state = "ERROR"
-            self.log.end_log(time.time())
-            self.state = pstatus.FINISHED
-            return
-
-        self.notify_update(
-            'Se ha escogido el tipo de acreditación: ' + accreditation.name)
-
-        self.notify_update(
-            'Obteniendo parámetros relacionados con el investigador.')
-        researcherInfo = self.get_researcher_info(self.parameters)
-
-        self.notify_update(
-            'Obteniendo los datos del investigador utilizando Hércules-EDMA.')
-
-        edma: EDMA = cs.get_edma(self.ip_api, self.port_api)
-        if edma:
-            researcherData = edma.get_researcher_data(researcherInfo)
-            if not researcherData:
-                self.notify_update(
-                    'ERROR no se ha podido obtener la información del investigador.')
-                self.log.state = "ERROR"
-                self.log.end_log(time.time())
-                self.state = pstatus.FINISHED
-                return
-            self.log.completed = 10
+                'Se ha escogido el tipo de acreditación: ' + accreditation.name)
 
             self.notify_update(
-                "Se procede a recuperar producción científica del investigador utilizando Hércules-EDMA")
+                'Obteniendo parámetros relacionados con el investigador.')
+            researcherInfo = self.get_researcher_info(self.parameters)
 
             self.notify_update(
-                'Obteniendo la lista de artículos del investigador.')
-            articles = self.get_articles(
-                researcherInfo, period, commission.authorship_order, edma)
-            print('Se han obtenido: ' + str(len(articles)) + ' artículos.')
+                'Obteniendo los datos del investigador utilizando Hércules-EDMA.')
 
-            charters_book = None
-            books = None
-            if commission.books_caps:
-                self.notify_update(
-                    'Obteniendo los capítulos de libros del investigador.')
-                charters_book = edma.get_chapters_books(
-                    researcherInfo, period)
-
-                self.notify_update(
-                    'Obteniendo los libros del investigador.')
-                books = edma.get_books(researcherInfo, period)
-            self.log.completed = 20
-
-            conferences: list = None
-            if commission.conferences:
-                self.notify_update(
-                    'Obteniendo los trabajos presentados en congresos por el investigador.')
-                self.get_conferences(researcherInfo, period, edma)
-
-            patents: list = None
-            if commission.patents:
-                self.notify_update(
-                    'Obteniendo las patentes del investigador.')
-                patents = self.get_patents(researcherInfo, edma)
-
-            self.log.completed = 40
-
-            self.notify_update(
-                'Se procede a realizar la valoración de la solicitud de acreditación.')
-            evaluation: AccreditationEvaluation = commission.get_accreditation_evaluation(
-                articles, accreditation)
-
-            self.notify_update(
-                "Se procederá a realizar el informe para solicitud de acreditación de la ANECA de "+researcherData.name)
-
-            informe = Report()
-            informe.add_title(
-                'Informe de autoevaluación de la investigación para la preparación de solicitud de acreditación de la ANECA')
-            document = informe.get_document()
-
-            self.notify_update(
-                'Insertando la información del investigador en el informe.')
-            self.print_researcher_data(
-                document, researcherData, researcherInfo, commission, period, accreditation)
-
-            self.notify_update(
-                'Insertando la información de la evaluación de la solicitud en el informe.')
-            self.print_evaluation(document, evaluation, 1)
-
-            if evaluation.positive:
-                self.notify_update(
-                    "Insertando en el informe la producción científica principal")
-
-                self.print_main_production(
-                    document, commission, evaluation, 2.1)
+            edma: EDMA = cs.get_edma(self.ip_api, self.port_api)
+            if edma:
+                researcherData = edma.get_researcher_data(researcherInfo)
+                if not researcherData:
+                    self.notify_update(
+                        'ERROR no se ha podido obtener la información del investigador.')
+                    self.log.state = "ERROR"
+                    self.log.end_log(time.time())
+                    self.state = pstatus.FINISHED
+                    return
+                self.log.completed = 10
 
                 self.notify_update(
-                    "Insertando en el informe la producción científica sustitutoria.")
-                self.print_scientific_production(
-                    document, evaluation.get_substitute_production(), commission, 'sustitutoria', 2.2)
-            else:
-                main = []
-                substitutes = []
-                if articles:
-                    main = articles[0:4]
-                    substitutes = articles[4:]
+                    "Se procede a recuperar producción científica del investigador utilizando Hércules-EDMA")
 
                 self.notify_update(
-                    "Insertando en el informe la Producción científica principal")
+                    'Obteniendo la lista de artículos del investigador.')
+                articles = self.get_articles(
+                    researcherInfo, period, commission.authorship_order, edma)
+                print('Se han obtenido: ' + str(len(articles)) + ' artículos.')
 
-                self.print_scientific_production(
-                    document, main, commission, 'principal', 2.1)
-                self.log.completed = 60
+                charters_book = None
+                books = None
+                if commission.books_caps:
+                    self.notify_update(
+                        'Obteniendo los capítulos de libros del investigador.')
+                    charters_book = edma.get_chapters_books(
+                        researcherInfo, period)
+
+                    self.notify_update(
+                        'Obteniendo los libros del investigador.')
+                    books = edma.get_books(researcherInfo, period)
+                self.log.completed = 20
+
+                conferences: list = None
+                if commission.conferences:
+                    self.notify_update(
+                        'Obteniendo los trabajos presentados en congresos por el investigador.')
+                    self.get_conferences(researcherInfo, period, edma)
+
+                patents: list = None
+                if commission.patents:
+                    self.notify_update(
+                        'Obteniendo las patentes del investigador.')
+                    patents = self.get_patents(researcherInfo, edma)
+
+                self.log.completed = 40
 
                 self.notify_update(
-                    "Insertando en el informe la producción científica sustitutoria.")
-                self.print_scientific_production(
-                    document, substitutes, commission, 'sustitutoria', 2.2)
+                    'Se procede a realizar la valoración de la solicitud de acreditación.')
+                evaluation: AccreditationEvaluation = commission.get_accreditation_evaluation(
+                    articles, accreditation)
 
-                self.log.completed = 70
-
-            if commission.authors_alert:
-                # LIBROS
                 self.notify_update(
-                    'Insertando en el informe los libros.')
-                self.print_books(document, books, commission, 3)
+                    "Se procederá a realizar el informe para solicitud de acreditación de la ANECA de "+researcherData.name)
 
-                # CAPITULOS DE LIBROS
+                informe = Report()
+                informe.add_title(
+                    'Informe de autoevaluación de la investigación para la preparación de solicitud de acreditación de la ANECA')
+                document = informe.get_document()
+
                 self.notify_update(
-                    'Insertando en el informe los capítulos de libros.')
-                self.print_chapter_books(
-                    document, charters_book, commission, 4)
+                    'Insertando la información del investigador en el informe.')
+                self.print_researcher_data(
+                    document, researcherData, researcherInfo, commission, period, accreditation)
 
-            self.log.completed = 80
-
-            self.print_conferences_patents(
-                document, commission, conferences, patents, 5)
-
-            self.log.completed = 90
-
-            document.add_page_break()
-
-            self.notify_update("Persistiendo informe...")
-            doc_name = self.save_report(
-                document, researcherData.name, False)
-            self.notify_update(
-                "Informe generado y guardado con el nombre "+doc_name + ".")
-            self.log.completed = 90
-
-            self.notify_update("Subiendo informe al CDN...")
-            url_cdn = cs.get_url_upload_cdn(self.ip_api, self.port_api)
-            response = self.upload_file(doc_name, url_cdn)
-            
-            status_send = None
-
-            if response and response.status_code == 200:
-                upload_response = json.loads(response.text)
                 self.notify_update(
-                    "Fichero subido correctamente, url de descarga: "+upload_response["url_cdn"])
+                    'Insertando la información de la evaluación de la solicitud en el informe.')
+                self.print_evaluation(document, evaluation, 1)
 
-                config = cs.get_globals_settings(self.ip_api, self.port_api)
-                if config:
-                    json_dicti = json.loads(config)
-                    if json_dicti:
-                        url = json_dicti['edma_host_servicios'] + \
-                            '/editorcv/Sexenios/Notify'
-                        response = self.send_report(
-                            upload_response["url_cdn"], researcherInfo[1], url)
+                if evaluation.positive:
+                    self.notify_update(
+                        "Insertando en el informe la producción científica principal")
 
-                        if response:
-                            status_send = response.status_code
-                        self.result = upload_response["url_cdn"]
+                    self.print_main_production(
+                        document, commission, evaluation, 2.1)
 
-            if status_send == 200:
-                self.notify_update("Informe notificado correctamente")
-            else:
+                    self.notify_update(
+                        "Insertando en el informe la producción científica sustitutoria.")
+                    self.print_scientific_production(
+                        document, evaluation.get_substitute_production(), commission, 'sustitutoria', 2.2)
+                else:
+                    main = []
+                    substitutes = []
+                    if articles:
+                        main = articles[0:4]
+                        substitutes = articles[4:]
+
+                    self.notify_update(
+                        "Insertando en el informe la Producción científica principal")
+
+                    self.print_scientific_production(
+                        document, main, commission, 'principal', 2.1)
+                    self.log.completed = 60
+
+                    self.notify_update(
+                        "Insertando en el informe la producción científica sustitutoria.")
+                    self.print_scientific_production(
+                        document, substitutes, commission, 'sustitutoria', 2.2)
+
+                    self.log.completed = 70
+
+                if commission.authors_alert:
+                    # LIBROS
+                    self.notify_update(
+                        'Insertando en el informe los libros.')
+                    self.print_books(document, books, commission, 3)
+
+                    # CAPITULOS DE LIBROS
+                    self.notify_update(
+                        'Insertando en el informe los capítulos de libros.')
+                    self.print_chapter_books(
+                        document, charters_book, commission, 4)
+
+                self.log.completed = 80
+
+                self.print_conferences_patents(
+                    document, commission, conferences, patents, 5)
+
+                self.log.completed = 90
+
+                document.add_page_break()
+
+                self.notify_update("Persistiendo informe...")
+                doc_name = self.save_report(
+                    document, researcherData.name, False)
                 self.notify_update(
-                            "ERROR en la notificación del informe")
-                self.log.state = "ERROR"
+                    "Informe generado y guardado con el nombre "+doc_name + ".")
+                self.log.completed = 90
+
+                self.notify_update("Subiendo informe al CDN...")
+                url_cdn = cs.get_url_upload_cdn(self.ip_api, self.port_api)
+                response = self.upload_file(doc_name, url_cdn)
                 
+                status_send = None
 
-            if os.path.exists(doc_name):
-                os.remove(doc_name)
+                if response and response.status_code == 200:
+                    upload_response = json.loads(response.text)
+                    self.notify_update(
+                        "Fichero subido correctamente, url de descarga: "+upload_response["url_cdn"])
+
+                    config = cs.get_globals_settings(self.ip_api, self.port_api)
+                    if config:
+                        json_dicti = json.loads(config)
+                        if json_dicti:
+                            url = json_dicti['edma_host_servicios'] + \
+                                '/editorcv/Sexenios/Notify'
+                            response = self.send_report(
+                                upload_response["url_cdn"], researcherInfo[1], url)
+
+                            if response:
+                                status_send = response.status_code
+                            self.result = upload_response["url_cdn"]
+
+                if status_send == 200:
+                    self.notify_update("Informe notificado correctamente")
+                else:
+                    self.notify_update(
+                                "ERROR en la notificación del informe")
+                    self.log.state = "ERROR"
+                    
+
+                if os.path.exists(doc_name):
+                    os.remove(doc_name)
+            else:
+                self.notify_update(
+                    'ERROR en la obtención de parámetros para la consulta a Hércules-EDMA.')
+                self.log.state = "ERROR"
         else:
-            self.notify_update(
-                'ERROR en la obtención de parámetros para la consulta a Hércules-EDMA.')
-            self.log.state = "ERROR"
-
+            self.notify_update('ERROR en la obtención de la comisión, puede que no esté implementada')
+        
         self.notify_update(
             'Proceso de generación de informe de acreditación finalizado.')
+           
         self.log.completed = 100
         self.log.end_log(time.time())
         self.state = pstatus.FINISHED

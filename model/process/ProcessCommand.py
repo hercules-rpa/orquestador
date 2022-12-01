@@ -134,16 +134,14 @@ class ProcessCommand(ABC):
                     "notificada": notificada
                 })
 
-            headers = {
-                'Content-Type': 'application/json'
-            }
             if url:
                 if not url.endswith('/'):
                     url = url + '/'
 
                 for element in elements:
-                    self.rpa.patch(url + str(element.id),
-                                headers=headers, data=payload)
+                    if element.id and element.id != 0:
+                        self.rpa.patch(url + str(element.id),
+                                    data=payload)
             else:
                 print('ERROR no ha sido posible persistir la colección de elementos')
 

@@ -67,11 +67,7 @@ class ProcessSexenios(ProcessCommand):
         committee: Committee = self.get_committee(self.parameters['comite'])
         if not committee:
             self.notify_update(
-                'ERROR no se ha podido obtener el comité.')
-            self.log.state = "ERROR"
-            self.log.end_log(time.time())
-            self.state = pstatus.FINISHED
-            return
+                'No se ha podido obtener el comité, puede que no esté implementado')
         else:
             self.notify_update('Obteniendo parámetro "período".')
             period = self.get_period(self.parameters['periodo'])

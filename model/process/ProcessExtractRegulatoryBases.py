@@ -350,7 +350,7 @@ class ProcessExtractRegulatoryBases(ProcessCommand):
                         num_ugi += 1
                         bbrr_ugi.append(bbrr)
 
-                response = self.persist_regulatory_base(bbrr, True)
+                response = self.persist_regulatory_base(bbrr, False)
                 try:
                     if response.text:
                         json_dicti = json.loads(response.text)

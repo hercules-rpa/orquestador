@@ -1,12 +1,5 @@
 -- Database: rpa
-CREATE DATABASE process
-WITH
-OWNER = postgres
-ENCODING = 'UTF8'
---LC_COLLATE = 'en_US.utf8'
---LC_CTYPE = 'en_US.utf8'
-TABLESPACE = pg_default
-CONNECTION LIMIT = -1;
+CREATE DATABASE process;
 -- Database: process
 \c process
 --Tables
@@ -22,7 +15,7 @@ CREATE TABLE NotificacionInvestigador (id SERIAL NOT NULL, idInvestigador int4 N
 CREATE TABLE Ejecucion_Boletin (id SERIAL NOT NULL, fecha_inicio timestamp default CURRENT_TIMESTAMP, fecha_fin timestamp default CURRENT_TIMESTAMP, fecha_ejecucion timestamp default CURRENT_TIMESTAMP, exito bool, PRIMARY KEY(id));
 
 
---Relation
+--Relations
 ALTER TABLE NotificacionInvestigador ADD CONSTRAINT FKNotificaci864820 FOREIGN KEY (idInvestigador) REFERENCES Investigador (id);
 ALTER TABLE CalificacionArea ADD CONSTRAINT FKCalificaci307021 FOREIGN KEY (idArea) REFERENCES AreaTematica (id);
 ALTER TABLE CalificacionArea ADD CONSTRAINT FKCalificaci811380 FOREIGN KEY (idInvestigador) REFERENCES Investigador (id);

@@ -140,8 +140,7 @@ class ProcessCommand(ABC):
 
                 for element in elements:
                     if element.id and element.id != 0:
-                        self.rpa.patch(url + str(element.id),
-                                    data=payload)
+                        self.rpa.patch(url + str(element.id),payload)
             else:
                 print('ERROR no ha sido posible persistir la colección de elementos')
 

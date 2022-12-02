@@ -16,14 +16,14 @@
    {
       "type":"checkbox",
       "name":"sr_activo",
-      "label":"Sistema de Recomendación contenido",
+      "label":"Sistema de recomendación contenido",
       "value": true,
       "checked":true
    },
    {
      "type": "text",
      "name": "sr_peso",
-     "label": "Sistema de Recomendación  peso",
+     "label": "Sistema de recomendación contenido peso",
      "value": "0.2"
    },
    {

@@ -30,36 +30,41 @@ class SGI():
         Método de autenticación contra el entorno de desarrollo,
         se debe ejecutar antes de cada llamada.
         """
+        result:bool = False
         if self.oauth_url and self.oauth_username:
-            tokenDate = datetime.datetime(2010, 1, 1)
-            if self.oauth_token_expiresintime == 0:
-                self.oauth_token_expiresintime = 300000
-            if (datetime.datetime.now() - tokenDate).total_seconds() >= self.oauth_token_expiresintime:
-                oauth_auth = "Basic " + \
-                    str(base64.b64encode(self.oauth_client_id))[
-                        2:-1] + ":" + self.oauth_client_secret
-                header = {
-                    'Authorization': oauth_auth,
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json'
-                }
-                body = {
-                    'mode': 'urlencoded',
-                    'grant_type': self.oauth_grant_type,
-                    'scope': self.oauth_scopes,
-                    'client_id': self.oauth_client_id,
-                    'client_secret': self.oauth_client_secret,
-                    'username': self.oauth_username,
-                    'password': self.oauth_password
-                }
-                response = requests.post(self.oauth_url, headers=header, data=body)
-                self.oauth_token = response.json()['access_token']
-                self.oauth_timestamp = datetime.datetime.now()
-                if response.json()['expires_in']:
-                    self.oauth_token_expiresintime = int(
-                        response.json()['expires_in']) * 1000
-                return True
-        return False
+            try:
+                tokenDate = datetime.datetime(2010, 1, 1)
+                if self.oauth_token_expiresintime == 0:
+                    self.oauth_token_expiresintime = 300000
+                if (datetime.datetime.now() - tokenDate).total_seconds() >= self.oauth_token_expiresintime:
+                    oauth_auth = "Basic " + \
+                        str(base64.b64encode(self.oauth_client_id))[
+                            2:-1] + ":" + self.oauth_client_secret
+                    header = {
+                        'Authorization': oauth_auth,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    }
+                    body = {
+                        'mode': 'urlencoded',
+                        'grant_type': self.oauth_grant_type,
+                        'scope': self.oauth_scopes,
+                        'client_id': self.oauth_client_id,
+                        'client_secret': self.oauth_client_secret,
+                        'username': self.oauth_username,
+                        'password': self.oauth_password
+                    }
+                    response = requests.post(self.oauth_url, headers=header, data=body)
+                    self.oauth_token = response.json()['access_token']
+                    self.oauth_timestamp = datetime.datetime.now()
+                    if response.json()['expires_in']:
+                        self.oauth_token_expiresintime = int(
+                            response.json()['expires_in']) * 1000
+                    result= True
+            except Exception as e:
+                print("ERROR: fallo en la autenticación de Hércules-SGI. " + str(e))
+            
+        return result
                 
 
     def get_calls(self, filters=None) -> str:

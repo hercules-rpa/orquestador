@@ -29,7 +29,8 @@ class ProcessExtractCall(ProcessCommand):
         self.state = pstatus.RUNNING
         self.log.state = "OK"
         self.log.start_log(time.time())
-        emails = self.parameters['receivers']
+        if 'bdns' not in self.parameters.keys():
+            emails = self.parameters['receivers']
         self.update_log(
             "El proceso de extracción de convocatorias ha empezado", True)
         self.log.completed = 0
@@ -58,9 +59,9 @@ class ProcessExtractCall(ProcessCommand):
                                 self.parameters['bdns'] + ' y descargamos sus recursos (pdf).', True)
                 try:
                     self.update_log(
-                        str(adapter_bdns.expand_info(self.parameters['bdns'])))
-                    resources = adapter_bdns.obtain_resources(
-                        self.parameters['bdns'])
+                        str(adapter_bdns.expand_info(self.parameters['bdns'])), True)
+                    resources = adapter_bdns.obtain_resources(self.parameters['bdns'])
+                    self.update_log("Estos son los enlaces a los archivos descargados para la convocatoria CDN: " + str(resources), True)
                 except:
                     self.update_log(
                         "Error al obtener los datos de la convocatoria con BDNS número: " + self.parameters['bdns'], True)
@@ -84,9 +85,9 @@ class ProcessExtractCall(ProcessCommand):
                             body = item.notify()
                         else:
                             self.update_log(item.notify(), True)
-                    except:
+                    except Exception as e:
                         self.update_log(
-                            "Error en la ejecución del subproceso " + type(item).__name__ + " ", True)
+                            "Error en la ejecución del subproceso " + type(item).__name__ + " . El motivo: " + str(e), True)
                 else:
                     try:
                         if 'start_date' in self.parameters.keys() and 'end_date' in self.parameters.keys():
@@ -102,9 +103,9 @@ class ProcessExtractCall(ProcessCommand):
                             body = item.notify()
                         else:
                             self.update_log(item.notify(), True)
-                    except:
+                    except Exception as e:
                         self.update_log(
-                            "Error en la ejecución del subproceso " + type(item).__name__ + " ", True)
+                            "Error en la ejecución del subproceso " + type(item).__name__ + " . El motivo: " + str(e), True)
 
             # Inyectamos los datos en el SGI
             self.inyect_sgi()
@@ -169,7 +170,8 @@ class ProcessExtractCall(ProcessCommand):
                             "No ha sido posible inyectar la convocatiria en Hércules-SGI.")
                 except Exception as e:
                     self.update_log(
-                        "No se ha podido inyectar en el SGI la convocatoria de la BDNS con título: " + item['titulo'])
+                        "No se ha podido inyectar en el SGI la convocatoria de la BDNS con título: " + item['titulo'], True)
+                    res = None
 
                 if res:
                     url_update = self.ip_api + ":" + self.port_api + \

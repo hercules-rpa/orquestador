@@ -56,6 +56,7 @@ class OrchestratorSettingsSchema(Schema):
     name = fields.Str()
     company = fields.Str()
     pathlog_store = fields.Str()
+    cdn_url = fields.Str()
     
 class ProcessGeneralSettingsSchema(Schema):
     """
@@ -86,7 +87,7 @@ class AMQPSettingsResource(MethodResource, Resource):
     @doc(description='Cambio de un parámetro de AMQP', tags=['Orch Settings'])
     @use_kwargs(AMQPSettingsSchema, location=('json'))
     @marshal_with(AMQPSettingsSchema)
-    def patch(self, id_settings = 1):
+    def patch(self, id_settings = 1, **kwargs):
         """
         Método para editar algún parámetro de AMQP.
         """
@@ -119,7 +120,7 @@ class DBProcessResource(MethodResource, Resource):
     @doc(description='Cambio de un parámetro de la persistencia de procesos', tags=['Orch Settings'])
     @use_kwargs(DBPersistenceSettingsSchema, location=('json'))
     @marshal_with(DBPersistenceSettingsSchema)
-    def patch(self, id_settings = 1):
+    def patch(self, id_settings = 1, **kwargs):
         """
         Método para editar parámetros de la persistencia.
         """
@@ -151,7 +152,7 @@ class DBBIResource(MethodResource, Resource):
     @doc(description='Cambio de un parámetro de la persistencia BI', tags=['Orch Settings'])
     @use_kwargs(DBBISettingsSchema, location=('json'))
     @marshal_with(DBBISettingsSchema)
-    def patch(self, id_settings = 1):
+    def patch(self, id_settings = 1, **kwargs):
         """
         Método para editar parámetros de la persistencia BI.
         """
@@ -184,7 +185,7 @@ class OrchestratorSettingsResource(MethodResource, Resource):
     @doc(description='Cambio de un parámetro de la configuración del orquestador', tags=['Orch Settings'])
     @use_kwargs(OrchestratorSettingsSchema, location=('json'))
     @marshal_with(OrchestratorSettingsSchema)
-    def patch(self, id_settings = 1):
+    def patch(self, id_settings = 1, **kwargs):
         """
         Método para editar parámetros de la configuración del orquestador.
         """
@@ -215,7 +216,7 @@ class ProcessSettingsResource(MethodResource, Resource):
     @token_required
     @doc(description='Editar la configuración general de los procesos', tags=['Orch Settings'])
     @marshal_with(ProcessGeneralSettingsSchema)
-    def patch(self, id_settings = 1):
+    def patch(self, id_settings = 1, **kwargs):
         """
         Método para editar la configuración de los procesos.
         """

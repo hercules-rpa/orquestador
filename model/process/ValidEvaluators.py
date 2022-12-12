@@ -16,7 +16,7 @@ class ValidEvaluators():
         conf = utils.get_configurations(filename)
         if conf:
             for key in conf:
-                if conf[key]['evaluacion']:
+                if 'evaluacion' in conf[key] and conf[key]['evaluacion']:
                     evaluator = {}
                     evaluator['name'] = conf[key]['name']
                     result[key] = evaluator

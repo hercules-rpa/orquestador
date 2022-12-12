@@ -56,7 +56,7 @@ class ProcessPostSchema(Schema):
     id_process = fields.Int()
     priority = fields.Int()
     exclude_robots = fields.List(fields.Str())
-    parameters = fields.Dict()
+    parameters = fields.Raw(allow_none=True,missing=True)
 
 class TimeScheduleSchema(Schema):
     """
@@ -162,17 +162,14 @@ class ScheduleResource(MethodResource, Resource):
         """
         Método para editar un proceso agendado para una marca de tiempo.
         """
-        print("hola1")
         time_schedule = request.get_json(force=True)['time_schedule']
         process = request.get_json(force=True)['process']        
         if not "exclude_robots" in process:
             process['exclude_robots'] = []
-        print("hola2")
         process_json = {
             "time_schedule":time_schedule,
             "process":process
         }
-        print("hola3")
         if not orch.set_schedule(schedule_id, json.dumps(process_json)):
             abort(400, description={"status": "ERROR", "schedule_id": schedule_id, "description":"Error editing schedule"})
 

@@ -81,6 +81,6 @@ class ScheduleProcess:
             
             return self.id
 
-        except:
-            print("ERROR FORMING THE PROCESS. MAYBE JSON WRONG? ")
+        except Exception as e:
+            print("ERROR FORMING THE PROCESS. MAYBE JSON WRONG? "+str(e))
             return None

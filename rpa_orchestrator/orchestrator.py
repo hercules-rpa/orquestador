@@ -58,13 +58,13 @@ class Singleton(type):
 
 
 class Orchestrator(ListenerMsg, metaclass=Singleton):
-    def __init__(self, id, name, company, pathlog_store, cdn_url):
+    def __init__(self, id_orch, name, company, pathlog_store, cdn_url):
         self.controller = ControllerAMQP()
         self.robot_list = {}
         self.schedule_list = []  # lista de ejecuciones planificadas.
         self.log_list = collections.deque(maxlen=1000)
         self.event_list = collections.deque(maxlen=1000)
-        self.id = id
+        self.id = id_orch
         self.name = name
         self.company = company
         self.pathlog_store = pathlog_store

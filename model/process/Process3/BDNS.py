@@ -175,9 +175,23 @@ class BDNS:
                     url = self.conf['bdns_url'] + "GE/es/convocatoria/" + \
                         str(num_bdns) + "/document/" + str(j[0])
                     response = requests.request("GET", url, verify=False)
-                    with open(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]), 'wb') as file:
-                        file.write(response.content)
-                    name_resources.append(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]))
+                    if response and response.status_code == 200:
+                        try:
+                            with open(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]), 'wb') as file:
+                                file.write(response.content)
+                                file.close()
+                            url_cdn = cs.get_url_upload_cdn(self.server, self.port)
+                            response = self.upload_file(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]), url_cdn)
+                            if response and response.status_code == 200:
+                                upload_response = json.loads(response.text)
+                                name_resources.append(upload_response["url_cdn"])
+                                os.remove(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]))
+                            else:
+                                name_resources.append("El archivo no se ha podido subir al CDN")
+                        except Exception as e:
+                            if os.path.exists(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3])):
+                                os.remove(DOWNLOAD_DIR + str(num_bdns) + '_' + str(j[3]))
+                os.rmdir(DOWNLOAD_DIR)
             context.close()
             browser.close()
             return name_resources
@@ -255,3 +269,22 @@ class BDNS:
         :return str mensaje de log.
         """
         return self.msg_notify
+
+    def upload_file(self, filename, url_cdn):
+        """
+        Método encargado de subir el informe al CDN.
+        :param filename nombre del archivo
+        :para url_cdn url de CDN
+        :return respuesta de la petición de subida al CDN.
+        """
+        response = None     
+        if url_cdn:   
+            with open('./'+filename, 'rb') as f:                
+                try:
+                    files = [('file', (filename, f, 'application/pdf'))]
+                    response = requests.post(url_cdn+"/upload.php", headers={}, data={}, files=files)
+                except Exception as e:
+                    print(str(e))
+                    self.notify_update('Error en la subida del informe al CDN.')            
+                f.close()
+        return response

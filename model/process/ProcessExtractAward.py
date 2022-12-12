@@ -33,7 +33,7 @@ class ProcessExtractAward(ProcessCommand):
 
         list_awards = {}
         param_info_pdf = {}
-        adapter_bdns = Adapter_BDNS()
+        adapter_bdns = Adapter_BDNS(self.ip_api, self.port_api)
         sgi = cs.get_sgi(self.ip_api, self.port_api)
         if sgi:
             #list_awards = [{'createdBy': '00391433', 'creationDate': '2022-05-05T09:02:28.475Z', 'lastModifiedBy': '00391433', 'lastModifiedDate': '2022-05-05T09:04:35.943Z', 'id': 23, 'titulo': '', 'convocatoriaId': 35, 'codigoExterno': '', 'codigoRegistroInterno': 'SGI_SLC2320220505', 'estado': {'createdBy': '00391433', 'creationDate': '2022-05-05T09:04:35.941Z', 'lastModifiedBy': '00391433', 'lastModifiedDate': '2022-05-05T09:04:35.941Z', 'id': 47, 'solicitudId': 23, 'estado': 'SOLICITADA', 'fechaEstado': '2022-05-05T09:02:37.084Z', 'comentario': ''}, 'creadorRef': '00391433', 'solicitanteRef': '28710458', 'observaciones': '', 'convocatoriaExterna': '', 'unidadGestionRef': '3', 'formularioSolicitud': 'PROYECTO', 'tipoSolicitudGrupo': None, 'activo': True},{"createdBy":"00391433","creationDate":"2022-05-09T14:20:32.068Z","lastModifiedBy":"00391433","lastModifiedDate":"2022-05-09T14:20:57.238Z","id":25,"titulo":"","convocatoriaId":35,"codigoExterno":"","codigoRegistroInterno":"SGI_SLC2520220509","estado":{"createdBy":"00391433","creationDate":"2022-05-09T14:20:57.238Z","lastModifiedBy":"00391433","lastModifiedDate":"2022-05-09T14:20:57.238Z","id":52,"solicitudId":25,"estado":"SOLICITADA","fechaEstado":"2022-05-09T14:20:42.496Z","comentario":""},"creadorRef":"00391433","solicitanteRef":"48495234","observaciones":"","convocatoriaExterna":"","unidadGestionRef":"3","formularioSolicitud":"PROYECTO","tipoSolicitudGrupo":None,"activo":True}]

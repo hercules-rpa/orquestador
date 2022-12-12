@@ -142,7 +142,7 @@ class ProcessExtractCalls(ProcessCommand):
                 "El proceso de extracción de convocatorias ha finalizado.")
 
             if not self.result:
-                self.result = '<b> CONVOCATORIAS: No se han obtenido convocatorias. </b> <br>'
+                self.result = (0,'<b> CONVOCATORIAS: No se han obtenido convocatorias. </b> <br>')
         else:
             self.notify_update('ERROR al obtener parámetros de Hércules-SGI')
             self.log.state = "ERROR"

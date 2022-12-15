@@ -233,7 +233,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         await self.__send_message(messages.ROUTE_ROBOT+id_robot, json.dumps(messages.MSG_RESUME_ROBOT))
 
     def send_restart_robot(self, id_robot):
-        resp = asyncio.run(self.__send_message(messages.ROUTE_ROBOT+id_robot, json.dumps(messages.MSG_RESTART_ROBOT)))
+        asyncio.run(self.__send_message(messages.ROUTE_ROBOT+id_robot, json.dumps(messages.MSG_RESTART_ROBOT)))
 
     async def __send_process_json(self, id_schedule, id_robot, process_json):
         process_json = json.loads(process_json)
@@ -341,7 +341,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
                     candidates.append(robot)
                 else:
                     if len(robot.process_list) > 0:
-                        if int(robot.process_list[0]['priority']) <= priority_process:
+                        if int(robot.process_list[0]['priority']) <= int(priority_process):
                             candidates.append(robot)
                     else:
                         candidates.append(robot)
@@ -626,7 +626,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
             self.db.dump([schedule_process])
             return id_schedule
         except Exception as e:
-            log_orch.error("Error al añadir el proceso ", str(e))
+            log_orch.error(msg="Error al añadir el proceso " + str(e))
         finally:
             self.lock.release()
 

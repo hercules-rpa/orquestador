@@ -2,7 +2,7 @@
 INSERT INTO public.PROCESS (id, class, name, requirements, description, visible, setting) VALUES
     (1,'ProcessHolaMundo','Hola Mundo', '', 'Proceso que envía una serie de mensajes a la salida estándar para utilizarlos como prueba',false,false),
     (3,'ProcessSendMail','Proceso de envío de correos electrónicos', '', 'Proceso para enviar correo a uno o varios destinatarios', false, false),
-    (9,'ProcessExtractCall','Proceso de extracción convocatorias','selenium bs4 playwright', 'Proceso para extraer las convocatorias de las páginas BDNS para su inyección en el SGI y el envío de las convocatorias de Europa por correo.', true, true),
+    (9,'ProcessExtractCall','Proceso de extracción convocatorias','selenium bs4 playwright', 'Proceso para extraer las convocatorias de las páginas BDNS para su inyección en el SGI y el envío de las convocatorias de Europa por correo.', true, false),
     (10,'ProcessExtractRegulatoryBases', 'Proceso de extracción de bases reguladoras', 'module-cognitive-treelogic','Proceso que extrae las bases reguladoras del BOE seleccionando un rango de fechas y envía los resultados por correo electrónico.', true, false),
     (13,'ProcessGenerateTransferReport', 'Proceso de generación de informe de transferencia', 'module-cognitive-treelogic','Proceso que genera un informe para el boletín de transferencia.', true, false),
     (14,'ProcessPdfToTable', 'Pdf to table', '','Proceso para filtrar tablas y generar un excel a partir de un documento pdf.', false, false),

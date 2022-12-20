@@ -18,4 +18,5 @@ INSERT INTO global_settings (id,edma_host_sparql,edma_host_servicios, edma_port_
     VALUES (1,'http://82.223.242.49','https://serviciosedma.gnoss.com', 8890, 'https://salastest.um.es', 80, 'gestor-rpa', 'gestor-rpa-2021', 'http://rpa-cdn-desa.um.es', 'https://github.com/hercules-rpa/robot/archive/refs/tags/v0.1.0-alpha.zip');
 
 INSERT INTO users (username, password, token)
-    VALUES ('admin',MD5('admin'),'');
+    VALUES ('admin',MD5('admin'),''),
+    ('edma',MD5('3DM4rp42022!'), '');

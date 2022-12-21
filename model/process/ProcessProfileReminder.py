@@ -5,7 +5,7 @@ from model.process.ProcessCommand import Pstatus as pstatus
 from model.process.ProcessCommand import ProcessID
 from rpa_robot.ControllerRobot import ControllerRobot
 from model.process.Process4.RSController import RSController
-
+import pandas as pd
 
 NAME = "Recordatorio Perfil"
 DESCRIPTION = "Proceso que manda un correo electrónico recordatorio para que los investigadores configuren su perfil"
@@ -29,7 +29,19 @@ class ProcessProfileReminder(ProcessCommand):
         self.result = None
         rsController = RSController(self.ip_api, self.port_api)
         df_investigadores = rsController.get_investigador_interno()
-        if len(df_investigadores) > 0:
+        test_email = self.parameters['test_email']
+
+        if len(test_email) > 0 and len(test_email[0]) > 0:
+            for email in test_email:
+                email = email['receiver']
+                data = {'nombre': ["Jane Doe"], "email":[email]}
+                df_inv = pd.DataFrame(data)
+                rsController.insert_investigadores(df_inv)
+                inv = rsController.get_investigador_email(email)
+                self.send_mail(inv.id, inv.nombre, inv.email)
+
+
+        elif len(df_investigadores) > 0:
             df_investigadores = df_investigadores[df_investigadores['perfil'] != True ]
             tam = len(df_investigadores)
             for _, inv in df_investigadores.iterrows():
@@ -49,6 +61,11 @@ class ProcessProfileReminder(ProcessCommand):
     def send_mail(self, id, nombre, email):
         controllerRobot = ControllerRobot()
         token = rsController.generate_token(id, controllerRobot.robot.id, controllerRobot.robot.token)
+        if not token:
+            self.update_log(
+                "No se pudo generar el token. No se puede enviar el correo al investigador "+investigador.nombre, True)
+            return False
+
         hola_investigador = """<p style="margin:0 0 12px 0;font-size:16px;line-height:24px;font-family:Arial,sans-serif;">Hola """ + \
             nombre+""",</p>"""
         url_perfil = """

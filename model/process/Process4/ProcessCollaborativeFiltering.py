@@ -101,12 +101,12 @@ class ProcessCollaborativeFiltering(ProcessCommand):
             for areaId in inputAreas['areaId'].tolist():
                 df_calificaciones_group = df_calificaciones['areaId'].value_counts(
                 )
-                if not areaId in df_calificaciones_group.index or df_calificaciones_group[areaId] < threshold_count:
+                if areaId not in df_calificaciones_group.index or df_calificaciones_group[areaId] < threshold_count:
                     self.update_log(
                         "No hay suficientes puntuaciones para usar el motor de recomendacion con el área "+str(areaId)+". Se procederá por heuristica", True)
                     self.update_log(
                         "Le enviaremos la convocatoria aquellos investigadores que la hayan puntuado con igual o más de un 2.5, y a aquellos que no la han puntuado", True)
-                    if not inv.id in df_calificaciones_pivot.index:
+                    if inv.id not in df_calificaciones_pivot.index:
                         notificacion_investigador[inv.id].append(1)
                     else:
                         investigador = df_calificaciones_pivot.loc[inv.id]
@@ -120,7 +120,7 @@ class ProcessCollaborativeFiltering(ProcessCommand):
                 else:
                     self.update_log(
                         "Hay suficientes puntuaciones para usar el motor de recomendacion.", True)
-                    if not inv.id in df_calificaciones_pivot.index:
+                    if inv.id not in df_calificaciones_pivot.index:
                         # Si el investigador no tiene nada le mandamos, nos aseguramos que se envie la convocatoria.
                         notificacion_investigador[inv.id].append(1)
                     else:

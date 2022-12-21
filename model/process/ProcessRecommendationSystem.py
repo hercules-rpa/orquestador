@@ -27,12 +27,13 @@ URL_FEEDBACK = "/#/p/feedback/"
 cs = ControllerSettings()
 controllerRobot = ControllerRobot()
 
+
 class ProcessRecommendationSystem(ProcessCommand):
-    def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api = None, port_api = None):
+    def __init__(self, id_schedule, id_log, id_robot, priority, log_file_path, parameters=None, ip_api=None, port_api=None):
         ProcessCommand.__init__(self, ID, NAME, REQUIREMENTS, DESCRIPTION,
                                 id_schedule, id_log, id_robot, priority, log_file_path, parameters, ip_api, port_api)
         self.url_api = self.ip_api+":"+str(self.port_api)
-        
+
     def execute(self):
         """
         Método encargado de la ejecución del proceso de recomendación
@@ -49,6 +50,8 @@ class ProcessRecommendationSystem(ProcessCommand):
         rsController.post_areastematicas()
         self.update_log("Extraemos las convocatorias del SGI. ", True)
         convocatorias = self.get_convocatoria()
+        test_email = self.parameters['test_email']
+        print(test_email)
         if len(convocatorias) == 0:
             self.log.completed = 100
             self.state = pstatus.FINISHED
@@ -59,79 +62,96 @@ class ProcessRecommendationSystem(ProcessCommand):
         self.update_log(
             "Número de total de convocatorias a notificar: "+str(len(convocatorias)), True)
 
-        for convocatoria in convocatorias:
-            self.log.completed += 95/len(convocatorias)
-            self.update_log("Convocatoria. Título: " +
-                            convocatoria.titulo+" ID: "+str(convocatoria.id), True)
-            self.update_log("Extraemos los investigadores. ", True)
-            inv_sin_solicitud, inv_con_solicitud = self.process_investigadores(
-                convocatoria)
-            if not inv_sin_solicitud:
-                self.update_log(
-                    "No hay investigadores a notificar para esta convocatoria, han sido ya notificados o no es de interés. ", True)
-            
-            parameters_process = {}
-            parameters_process['convocatoria'] = convocatoria
-            parameters_process['investigadores'] = inv_sin_solicitud
-
-            process_collaborativeFiltering = FiltroColaborativo.ProcessCollaborativeFiltering(
-                self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters_process, self.ip_api, self.port_api)
-            rs_content = ProcessSRContenido.ProcessRSContent(
-                self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters_process, self.ip_api, self.port_api)
-            collaboration_graph = ProcessGrafoColaboracion.ProcessCollaborativeGraph(
-                self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters_process, self.ip_api, self.port_api)
-
-            process_collaborativeFiltering.add_data_listener(self)
-            rs_content.add_data_listener(self)
-            collaboration_graph.add_data_listener(self)
-            
-            input_list = []
-            
-            threshold_score = float(self.parameters['threshold_score'])
-            format_input = {}
-            if self.parameters['fc_activo']:
-                self.update_log("Se procede a llamar al sistema: FiltroColaborativo ", True)
-                process_collaborativeFiltering.execute()
-                format_input['SistemaRecomendacion'] = 'FiltroColaborativo'
-                format_input['peso'] = float(self.parameters['fc_peso'])
-                format_input['data'] = process_collaborativeFiltering.result
-                input_list.append(format_input)
-            elif self.parameters['sr_activo']:
-                self.update_log("Se procede a llamar al sistema: Basado en Contenido ", True)
-                rs_content.execute()
-                format_input['SistemaRecomendacion'] = 'SRContenido'
-                format_input['peso'] = self.parameters['sr_peso']
-                format_input['data'] = rs_content.result
-                input_list.append(format_input)
-            elif self.parameters['gc_activo']:
-                self.update_log("Se procede a llamar al sistema: Grafo Colaboración ", True)
-                collaboration_graph.execute()
-                format_input['SistemaRecomendacion'] = 'GrafoColaboracion'
-                format_input['peso'] = self.parameters['gc_peso']
-                format_input['data'] = collaboration_graph.result
-                input_list.append(format_input)
-        
+        if len(test_email) > 0 and len(test_email[0]) > 0:
             self.update_log(
-                "Se procede a llamar al motor híbrido con todos los resultados de los sistemas", True)
-            hybrid_engine = ProcessMotorHibrido.ProcessHybridEngine(
-                self.log.id_schedule, self.log.id, self.id_robot, "1", None, input_list)
-            hybrid_engine.add_data_listener(self)
-            hybrid_engine.execute()
+            "Modo Testing, no se mandará notificación a los investigadores: ", True)
+            self.__execute_test_emails(test_email, convocatorias)
+            
+        else:            
+            for convocatoria in convocatorias:
+                self.log.completed += 95/len(convocatorias)
 
-            if not self.notificacion(convocatoria, hybrid_engine.result, threshold_score):
-                self.update_log("Proceso terminado con ERROR. No se han podido notificar", True)
-                self.log.state = "ERROR"
-                self.log.completed = 100
-                self.state = pstatus.FINISHED
-                self.log.end_log(time.time())
-                return
-                
+                self.update_log("Convocatoria. Título: " +
+                                convocatoria.titulo+" ID: "+str(convocatoria.id), True)
+                self.update_log("Extraemos los investigadores. ", True)
+                inv_sin_solicitud, inv_con_solicitud = self.process_investigadores(
+                    convocatoria)
+                if not inv_sin_solicitud:
+                    self.update_log(
+                        "No hay investigadores a notificar para esta convocatoria, han sido ya notificados o no es de interés. ", True)
+                    continue
+
+                parameters_process = {}
+                parameters_process['convocatoria'] = convocatoria
+                parameters_process['investigadores'] = inv_sin_solicitud
+
+                process_collaborativeFiltering = FiltroColaborativo.ProcessCollaborativeFiltering(
+                    self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters_process, self.ip_api, self.port_api)
+                rs_content = ProcessSRContenido.ProcessRSContent(
+                    self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters_process, self.ip_api, self.port_api)
+                collaboration_graph = ProcessGrafoColaboracion.ProcessCollaborativeGraph(
+                    self.log.id_schedule, self.log.id, self.id_robot, "1", None, parameters_process, self.ip_api, self.port_api)
+
+                process_collaborativeFiltering.add_data_listener(self)
+                rs_content.add_data_listener(self)
+                collaboration_graph.add_data_listener(self)
+
+                input_list = []
+
+                threshold_score = float(self.parameters['threshold_score'])
+                format_input = {}
+                if self.parameters['fc_activo']:
+                    self.update_log(
+                        "Se procede a llamar al sistema: FiltroColaborativo ", True)
+                    process_collaborativeFiltering.execute()
+                    format_input['SistemaRecomendacion'] = 'FiltroColaborativo'
+                    format_input['peso'] = float(self.parameters['fc_peso'])
+                    format_input['data'] = process_collaborativeFiltering.result
+                    input_list.append(format_input)
+                elif self.parameters['sr_activo']:
+                    self.update_log(
+                        "Se procede a llamar al sistema: Basado en Contenido ", True)
+                    rs_content.execute()
+                    format_input['SistemaRecomendacion'] = 'SRContenido'
+                    format_input['peso'] = self.parameters['sr_peso']
+                    format_input['data'] = rs_content.result
+                    input_list.append(format_input)
+                elif self.parameters['gc_activo']:
+                    self.update_log(
+                        "Se procede a llamar al sistema: Grafo Colaboración ", True)
+                    collaboration_graph.execute()
+                    format_input['SistemaRecomendacion'] = 'GrafoColaboracion'
+                    format_input['peso'] = self.parameters['gc_peso']
+                    format_input['data'] = collaboration_graph.result
+                    input_list.append(format_input)
+
+                self.update_log(
+                    "Se procede a llamar al motor híbrido con todos los resultados de los sistemas", True)
+                hybrid_engine = ProcessMotorHibrido.ProcessHybridEngine(
+                    self.log.id_schedule, self.log.id, self.id_robot, "1", None, input_list)
+                hybrid_engine.add_data_listener(self)
+                hybrid_engine.execute()
+                self.notificacion(convocatoria, hybrid_engine.result, threshold_score)
+
         print("Proceso finalizado")
-        self.update_log("Se han notificado correctamente. ", True)
         self.log.completed = 100
         self.state = pstatus.FINISHED
         self.log.end_log(time.time())
-        
+
+    def __execute_test_emails(self, emails, convocatorias):
+        for convocatoria in convocatorias:
+            self.update_log("Convocatoria. Título: " +
+                                convocatoria.titulo+" ID: "+str(convocatoria.id), True)
+            self.log.completed += 95/len(convocatorias)
+            for test_email in emails:
+                email = test_email['receiver']
+                data = {'nombre': ["Jane Doe"], "email":[email]}
+                df_inv = pd.DataFrame(data)
+                print(df_inv)
+                rsController.insert_investigadores(df_inv)
+                inv = rsController.get_investigador_email(email)
+                self.generar_correo(convocatoria, inv, True)
+
 
     def __get_solicitudes(self, idconvocatoria):
         """
@@ -176,10 +196,11 @@ class ProcessRecommendationSystem(ProcessCommand):
         for conv in convocatorias_dict:
             convocatoria = p4.Convocatoria(
                 conv['id'], conv['titulo'], None, conv['fechaPublicacion'])
+                
             # Insertamos las areas tematicas a la convocatoria
             rsController.get_areamatica_sgi(convocatoria)
             if not convocatoria.areaTematica:
-                #La convocatoria no tiene area tematica, se considera que no esta completa, por lo tanto no se tendra en cuenta
+                # La convocatoria no tiene area tematica, se considera que no esta completa, por lo tanto no se tendra en cuenta
                 convocatorias_sin_areatematica.append(convocatoria)
             else:
                 convocatorias.append(convocatoria)
@@ -201,7 +222,7 @@ class ProcessRecommendationSystem(ProcessCommand):
             # investigadores_solicitud.append(self.__get_investigador_sgi(solicitud['solicitanteRef']).email)
         # df_investigadores_con_solicitud = investigadores[investigadores['email'].isin(investigadores_solicitud)]
         return investigadores_solicitud
-    
+
     def process_investigadores(self, convocatoria: p4.Convocatoria):
         """
         Método para obtener todos los investigadores tanto internos (almacenados en nuestra bbdd) como de EDMA 
@@ -248,39 +269,42 @@ class ProcessRecommendationSystem(ProcessCommand):
                 rsController.insert_investigadores(df_new_invs)
             df_investigadores = df_investigadores[~df_investigadores.email.isin(
                 investigadores_con_solicitud.email)]
-            
+
         investigadores_listado_sin_solicitud = []
         investigadores_listado_con_solicitud = []
 
         for _, inv in df_investigadores.iterrows():
-            #Si ya hemos notificado la convocatoria no lo volveremos a hacer
+            # Obtenemos los investigadores con su id y si ya hemos notificado la convocatoria no lo volveremos a hacer
             inv_a_notificar = rsController.get_notificacion_interna(
                 inv['email'], convocatoria)
             if inv_a_notificar and inv_a_notificar.is_config_perfil:
-                rsController.cargar_perfil(inv_a_notificar) #Cargamos el perfil de las puntuaciones, si ya lo tuviera configurado no es necesario
+                # Cargamos el perfil de las puntuaciones, si ya lo tuviera configurado no es necesario
+                rsController.cargar_perfil(inv_a_notificar)
                 investigadores_listado_sin_solicitud.append(inv_a_notificar)
 
         for _, inv in investigadores_con_solicitud.iterrows():
-            #Si ya hemos notificado la convocatoria no lo volveremos a hacer
+            # Si ya hemos notificado la convocatoria no lo volveremos a hacer
             inv_a_notificar = rsController.get_notificacion_interna(
                 inv['email'], convocatoria)
             if inv_a_notificar:
                 investigadores_listado_con_solicitud.append(inv_a_notificar)
-        
+
         self.update_log("Total de investigadores que NO han hecho la solicitud " +
                         str(len(investigadores_listado_sin_solicitud)), True)
         self.update_log("Total de investigadores que SI han hecho la solicitud " +
                         str(len(investigadores_listado_con_solicitud)), True)
         return investigadores_listado_sin_solicitud, investigadores_listado_con_solicitud
 
-    def generar_correo(self, convocatoria: p4.Convocatoria, investigador: p4.Investigador):
+    def generar_correo(self, convocatoria: p4.Convocatoria, investigador: p4.Investigador, test_email:bool = False):
         """
         Método para notificar por email la convocatoria.
         :param convocatoria convocatoria que se quiere recomendar
         :param investigador investigador a notificar
+        :param test_email test_email indica si el correo que se genera viene de un lote de correos prueba, por lo que no es necesaria su inserción en bbdd
         :return bool si ha podido completarlo o no
         """
-        token = rsController.generate_token(investigador.id, controllerRobot.robot.id, controllerRobot.robot.token)
+        token = rsController.generate_token(
+            investigador.id, controllerRobot.robot.id, controllerRobot.robot.token)
         if not token:
             self.update_log(
                 "No se pudo generar el token. No se puede enviar el correo al investigador "+investigador.nombre, True)
@@ -300,16 +324,19 @@ class ProcessRecommendationSystem(ProcessCommand):
         if convocatorias_entidad_finan and len(convocatorias_entidad_finan) > 0:
             convocatorias_entidad_finan = json.loads(
                 convocatorias_entidad_finan)
-        
-        if convocatoria_base['fechaConcesion']:  
-            fecha_concesion = datetime.strptime(convocatoria_base['fechaConcesion'], "%Y-%m-%dT%H:%M:%SZ")
+
+        if convocatoria_base['fechaConcesion']:
+            fecha_concesion = datetime.strptime(
+                convocatoria_base['fechaConcesion'], "%Y-%m-%dT%H:%M:%SZ")
             fecha_concesion = datetime.strftime(fecha_concesion, "%d/%m/%Y")
         else:
             fecha_concesion = "Desconocida"
-            
+
         if convocatoria_base['fechaPublicacion']:
-            fecha_publicacion = datetime.strptime(convocatoria_base['fechaPublicacion'], "%Y-%m-%dT%H:%M:%SZ")
-            fecha_publicacion = datetime.strftime(fecha_publicacion, "%d/%m/%Y")
+            fecha_publicacion = datetime.strptime(
+                convocatoria_base['fechaPublicacion'], "%Y-%m-%dT%H:%M:%SZ")
+            fecha_publicacion = datetime.strftime(
+                fecha_publicacion, "%d/%m/%Y")
         else:
             fecha_publicacion = "Desconocida"
 
@@ -332,24 +359,23 @@ class ProcessRecommendationSystem(ProcessCommand):
             str(convocatoria.id) + '/datos-generales' + \
             """ style="color:#ee4c50;text-decoration:underline;">Enlace a la convocatoria</a></p>"""
         interes_conv = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>**¿Te ha resultado de interés esta convocatoria? </b> <a href="""+controllerRobot.robot.frontend+URL_FEEDBACK+token+"/" + \
-            str(convocatoria.id)+"/si"+""" style="color:#ee4c50;text-decoration:underline;">Sí</a> / <a href="""+controllerRobot.robot.frontend+URL_FEEDBACK+ \
+            str(convocatoria.id)+"/si"+""" style="color:#ee4c50;text-decoration:underline;">Sí</a> / <a href="""+controllerRobot.robot.frontend+URL_FEEDBACK + \
             token+"/"+str(convocatoria.id)+"/no" + \
             """ style="color:#ee4c50;text-decoration:underline;">No</a></p>"""
         url_perfil = """<tr><td><p style="margin-top:50px;font-size:16px;line-height:24px;font-family:Arial,sans-serif;">Puedes obtener convocatorias más personalizadas configurando su perfil. </p>
                         <p style="margin-top:1px;font-size:16px;font-family:Arial,sans-serif;"><a href="""+controllerRobot.robot.frontend+URL_PROFILE+token+""" style="color:#ee4c50;text-decoration:underline;">Configurar mi perfil</a></p><p style="margin-top:30px;margin-bottom:5px;font-size:12px;line-height:24px;font-family:Arial,sans-serif;">**No comparta ningún enlance, son exclusivos para cada investigador.**</p></td></tr>"""
 
         html_body_convocatoria = []
-        if convocatoria_entidad_convo:
-            if convocatoria_entidad_convo['programa']:
-                if sgi.get_company(convocatoria_entidad_convo['entidadRef']):
-                    empresa_nombre = json.loads(sgi.get_company(
-                        convocatoria_entidad_convo['entidadRef']))['nombre']
-                else:
-                    empresa_nombre = ""
+        if convocatoria_entidad_convo and convocatoria_entidad_convo['programa']:
+            if sgi.get_company(convocatoria_entidad_convo['entidadRef']):
+                empresa_nombre = json.loads(sgi.get_company(
+                    convocatoria_entidad_convo['entidadRef']))['nombre']
+            else:
+                empresa_nombre = ""
 
-                html_entidad_convo = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Entidad Convocante:</b>"""+empresa_nombre+""" </p>"""
-                html_body_convocatoria.append(html_entidad_convo)
-                
+            html_entidad_convo = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Entidad Convocante:</b>"""+empresa_nombre+""" </p>"""
+            html_body_convocatoria.append(html_entidad_convo)
+
         for convocatoria_entidad_finan in convocatorias_entidad_finan:
             if convocatoria_entidad_finan:
                 if sgi.get_company(convocatoria_entidad_finan['entidadRef']):
@@ -361,15 +387,20 @@ class ProcessRecommendationSystem(ProcessCommand):
                 html_body_convocatoria.append(html_entidad_finan)
 
                 if convocatoria_entidad_finan['tipoFinanciacion']:
-                    html_entidad_finan = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Tipo Financiación:</b>"""+convocatoria_entidad_finan['tipoFinanciacion']['nombre']+""" </p>"""
+                    html_entidad_finan = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Tipo Financiación:</b>""" + \
+                        convocatoria_entidad_finan['tipoFinanciacion']['nombre']+""" </p>"""
                     html_body_convocatoria.append(html_entidad_finan)
-                
+
                 if convocatoria_entidad_finan['porcentajeFinanciacion']:
-                    html_entidad_finan = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Porcentaje de Financiación:</b>"""+str(convocatoria_entidad_finan['porcentajeFinanciacion'])+""" </p>"""
+                    html_entidad_finan = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Porcentaje de Financiación:</b>""" + \
+                        str(
+                            convocatoria_entidad_finan['porcentajeFinanciacion'])+""" </p>"""
                     html_body_convocatoria.append(html_entidad_finan)
-                
+
                 if convocatoria_entidad_finan['importeFinanciacion']:
-                    html_entidad_finan = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Importe de Financiación:</b>"""+str(convocatoria_entidad_finan['importeFinanciacion'])+""" </p>"""
+                    html_entidad_finan = """<p style="margin:20;font-size:16px;line-height:24px;font-family:Arial,sans-serif;"><b>Importe de Financiación:</b>""" + \
+                        str(
+                            convocatoria_entidad_finan['importeFinanciacion'])+""" </p>"""
                     html_body_convocatoria.append(html_entidad_finan)
 
         html_body_convocatoria.append(html_titulo)
@@ -457,18 +488,19 @@ class ProcessRecommendationSystem(ProcessCommand):
             </body>
 
             </html>
-        """        
-        utils = UtilsProcess(self.log.id_schedule, self.log.id, self.id_robot, self.priority, self.log.log_file_path)
-        state = utils.send_email_html([{"receiver":investigador.email}], body, 'Convocatoria SGI', process=self)
+        """
+        utils = UtilsProcess(self.log.id_schedule, self.log.id,
+                             self.id_robot, self.priority, self.log.log_file_path)
+        state = utils.send_email_html(
+            [{"receiver": investigador.email}], body, 'Convocatoria SGI', process=self)
         if state == "ERROR":
-            self.update_log("No se pudo enviar el correo al investigador"+investigador.email, True)
-            self.log.state = "ERROR"
-            self.log.completed = 100
-            return False
+            self.update_log(
+                "No se pudo enviar el correo al investigador"+investigador.email, True)
 
-        if not rsController.post_notificacion(investigador, convocatoria):
-            self.update_log("Error al insertar la notificación del investigador " +
-                            investigador.nombre+" con ID "+str(investigador.id), True)
+        if not test_email:
+            if not rsController.post_notificacion(investigador, convocatoria):
+                self.update_log("Error al insertar la notificación del investigador " +
+                                investigador.nombre+" con ID "+str(investigador.id), True)
         return True
 
     def notificacion(self, convocatoria, investigadores, threshold_score=0.4):
@@ -484,8 +516,8 @@ class ProcessRecommendationSystem(ProcessCommand):
         for idInv, puntuacion in investigadores.items():
             if puntuacion > threshold_score:
                 investigador = rsController.get_investigador_interno(idInv)
-                self.update_log("Notificamos al investigador "+ investigador.email + " de la convocatoria "+
-                        convocatoria.titulo, True)
+                self.update_log("Notificamos al investigador " + investigador.email + " de la convocatoria " +
+                                convocatoria.titulo, True)
                 if not self.generar_correo(convocatoria, investigador):
                     return False
         return True

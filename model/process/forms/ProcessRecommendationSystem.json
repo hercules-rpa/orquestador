@@ -46,6 +46,25 @@
       "value": "0.38"
    },
    {
+      "type":"group",
+      "label":"Emails test",
+      "name":"test_email",
+      "repeatable":true,
+      "add-label":"+ Email",
+      "value":[
+         {
+            
+         }
+      ],
+      "children":[
+         {
+            "type":"text",
+            "name":"receiver",
+            "label":"Emails"
+         }
+      ]
+   },
+   {
       "type":"submit",
       "label":"Ejecutar"
    }

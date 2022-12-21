@@ -71,6 +71,7 @@ class RSController(metaclass=Singleton):
                     calificacion = json.loads(r.text)[0]
                     row[2] = calificacion['puntuacion']
                 areaTematica = areaTematica.areaHijo
+            calificaciones.loc[len(calificaciones)] = row
         return calificaciones
 
     def post_areastematicas(self):
@@ -115,7 +116,7 @@ class RSController(metaclass=Singleton):
         :param idrobot id del robot que ejecuta el proceso
         :param token token del robot amqp
         """
-        headers = { 'Content-Type': 'application/json' }
+        
         body_json = {'iduser':idInvestigador, 'idrobot': idrobot, 'token': token}
         r = self.rpa_controller.post(service=self.url_api+URL_GENERATE_TOKEN, data_body = json.dumps(body_json))
         if r.status_code == 200:
@@ -189,7 +190,7 @@ class RSController(metaclass=Singleton):
                             for areaTematica in areasTematicas:
                                 areaTematica = areaTematica.areaHijo  # Nos quitamos la fuente
                                 while areaTematica:
-                                    if not str(areaTematica.id) in index:
+                                    if str(areaTematica.id) not in index:
                                         body['idarea'] = areaTematica.id
                                         body['puntuacion'] = 2.5
                                         areas.append(body)
@@ -199,7 +200,7 @@ class RSController(metaclass=Singleton):
                                         dict_body['puntuacion'] += 0.15
                                     areaTematica = areaTematica.areaHijo
                 token = self.generate_token(investigador.id, controllerRobot.robot.id, controllerRobot.robot.token)
-                x = requests.post(self.url_api+URL_CALIFICACION_AREA, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer '+str(token)}, data = json.dumps(areas))
+                requests.post(self.url_api+URL_CALIFICACION_AREA, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer '+str(token)}, data = json.dumps(areas))
             return True
         except Exception as e:
             print("Error al cargar el perfil "+str(e))
@@ -260,6 +261,18 @@ class RSController(metaclass=Singleton):
         print("Ocurrio algo raro, no sabemos como no se encontro al investigador en la bbdd interna ",emailinvestigador)
         return None
 
+    def get_investigador_email(self, emailinvestigador: str):
+        """
+        Método para obtener investigador
+        :param emailinvestigador email del investigador
+        return objeto investigador
+        """
+        r = self.rpa_controller.get(self.url_api+URL_INVESTIGADOR+"?email="+emailinvestigador)
+        if r.status_code == 200:
+            investigador = json.loads(r.text)[0]
+            investigador = p4.Investigador(id=investigador['id'],nombre=investigador['nombre'], email=investigador['email'], perfil=investigador['perfil'])
+        return investigador
+
     def get_areatematica_interno_id(self, id: int) -> p4.AreaTematica:
         """ 
         Método que devuelve una área temática de la bbdd interna
@@ -292,15 +305,15 @@ class RSController(metaclass=Singleton):
                 return areatematica
         return None
 
-    def insert_investigadores(self, df: pd.DataFrame):
+    def insert_investigadores(self, df: pd.DataFrame, perfil=False):
         """ 
         Método para insertar investigadores en la bbdd interna
         :param df dataframe de investigadores a insertar
         """
         investigadores = []
         for index, row in df.iterrows():
-            investigadores.append({'nombre':row['nombre'], 'email':row['email'], 'perfil':False})
-        x = self.rpa_controller.post(service=self.url_api+URL_INVESTIGADOR, data_body = json.dumps(investigadores))
+            investigadores.append({'nombre':row['nombre'], 'email':row['email'], 'perfil':perfil})
+        self.rpa_controller.post(service=self.url_api+URL_INVESTIGADOR, data_body = json.dumps(investigadores))
 
 
     def insert_areatematica_interno(self, areatematica:p4.AreaTematica, fuente:str):

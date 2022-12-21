@@ -238,7 +238,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
     async def __send_process_json(self, id_schedule, id_robot, process_json):
         process_json = json.loads(process_json)
         if(not id_robot):
-            if not 'exclude_robots' in process_json:  # Temporal
+            if 'exclude_robots' not in process_json:  # Temporal
                 exclude_robots = []
             else:
                 exclude_robots = process_json['exclude_robots']
@@ -335,7 +335,7 @@ class Orchestrator(ListenerMsg, metaclass=Singleton):
         cand_equal = []
         for (key, value) in self.robot_list.items():
             robot = value[0]
-            if robot.online and not (set(required) - set(robot.features)) and not robot.id in exclude_robots:
+            if robot.online and not (set(required) - set(robot.features)) and robot.id not in exclude_robots:
                 if robot.state == "Iddle" and len(robot.process_list) == 0:
                     # Cogemos el primero que este iddle y no tenga nada pendiente
                     candidates.append(robot)
